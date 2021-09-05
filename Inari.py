@@ -1,5 +1,5 @@
 from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QStyleOptionGraphicsItem, QHBoxLayout, QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneMouseEvent, QGraphicsSceneMouseEvent, QGraphicsColorizeEffect, QGraphicsEffect, QGraphicsBlurEffect
-from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush
+from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent
 from PySide2.QtCore import Qt, QObject, QPoint, QPointF
 from PySide2.QtSvg import QGraphicsSvgItem, QSvgRenderer
 
@@ -80,6 +80,28 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
         self.setGraphicsEffect(None)
 
 
+class InariQGraphicsView(QGraphicsView):
+    def __init__(self, scene:QGraphicsScene, parent:QWidget=None):
+        super().__init__(scene, parent)
+
+        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setDragMode(QGraphicsView.ScrollHandDrag)
+        self.setGeometry(0, 0, 300, 300)
+        self.setBackgroundBrush(QColor(45, 45, 45))
+        self.setFrameShape(QFrame.NoFrame)
+
+    # override
+    def wheelEvent(self, event:QWheelEvent):
+        super().wheelEvent(event)
+
+        if event.delta() > 0:
+            self.scale(1.05, 1.05)
+        else:
+            self.scale(0.95, 0.95)
+
 class Inari(QWidget):
     def __init__(self, parent: QObject):
         super().__init__(parent)
@@ -87,7 +109,6 @@ class Inari(QWidget):
         self.setStyleSheet("background-color: black")
 
         self.scene = QGraphicsScene(self)
-
         # lEyebrow
         self.scene.addItem(InariGraphicsSvgItem("./assets/eyebrow.svg"))
         self.scene.addItem(InariGraphicsSvgItem("./assets/eyebrow_button01.svg", 14.66, 24.57, "command 1"))
@@ -100,17 +121,7 @@ class Inari(QWidget):
         self.scene.addItem(InariGraphicsSvgItem("./assets/eyebrow_button04.svg", 58 + (26 * 4), 97, "command 8"))
         self.scene.addItem(InariGraphicsSvgItem("./assets/eyebrow_button05.svg", 78, 15, "command 9"))
 
-        view = QGraphicsView(self.scene, self)
-        view.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-        view.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
-        view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        view.setDragMode(QGraphicsView.ScrollHandDrag)
-        view.setGeometry(0, 0, 300, 300)
-        view.scale(2, 2)
-        view.setBackgroundBrush(Qt.black)
-        view.setFrameShape(QFrame.NoFrame)
-        view.setStyleSheet("border: 0px;")
+        view = InariQGraphicsView(self.scene, self)
         view.show()
 
         layout = QHBoxLayout()
