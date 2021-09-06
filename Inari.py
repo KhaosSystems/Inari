@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QStyleOptionGr
 from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent
 from PySide2.QtCore import Qt, QObject, QPoint, QPointF
 from PySide2.QtSvg import QGraphicsSvgItem, QSvgRenderer
-
+import json
 import sys
 
 
@@ -30,17 +30,18 @@ class InariGraphicsBrightenEffect(QGraphicsEffect):
 
 class InariGraphicsSvgItem(QGraphicsSvgItem):
     # TODO: Remove posX and posY from constructor, this is TMP api stuff
-    def __init__(self, fileName: str, posX: float = 0, posY: float = 0, command:str = None):
+    def __init__(self, fileName: str):
         super().__init__(fileName)
 
-        self.command = command
-        self.setSelected(True)
-        self.setPos(posX, posY)
+        self.command = None
         self.setAcceptHoverEvents(1)
 
     # override; add highlighting stuff
     # def paint(self, painter:QPainter, option:QStyleOptionGraphicsItem, widget:QWidget=None):
         
+    def setOnClickCommand(self, command:str):
+        self.command = command
+
     # override
     def hoverEnterEvent(self, event: QGraphicsSceneHoverEvent):
         super().hoverEnterEvent(event)
@@ -109,17 +110,6 @@ class Inari(QWidget):
         self.setStyleSheet("background-color: black")
 
         self.scene = QGraphicsScene(self)
-        # lEyebrow
-        self.scene.addItem(InariGraphicsSvgItem("./assets/eyebrow.svg"))
-        self.scene.addItem(InariGraphicsSvgItem("./assets/eyebrow_button01.svg", 14.66, 24.57, "command 1"))
-        self.scene.addItem(InariGraphicsSvgItem("./assets/eyebrow_button02.svg", 154.64, 31.2, "command 2"))
-        self.scene.addItem(InariGraphicsSvgItem("./assets/eyebrow_button03.svg", 206.37, 36.7, "command 3"))
-        self.scene.addItem(InariGraphicsSvgItem("./assets/eyebrow_button04.svg", 58 + (26 * 0), 97, "command 4"))
-        self.scene.addItem(InariGraphicsSvgItem("./assets/eyebrow_button04.svg", 58 + (26 * 1), 97, "command 5"))
-        self.scene.addItem(InariGraphicsSvgItem("./assets/eyebrow_button04.svg", 58 + (26 * 2), 97, "command 6"))
-        self.scene.addItem(InariGraphicsSvgItem("./assets/eyebrow_button04.svg", 58 + (26 * 3), 97, "command 7"))
-        self.scene.addItem(InariGraphicsSvgItem("./assets/eyebrow_button04.svg", 58 + (26 * 4), 97, "command 8"))
-        self.scene.addItem(InariGraphicsSvgItem("./assets/eyebrow_button05.svg", 78, 15, "command 9"))
 
         view = InariQGraphicsView(self.scene, self)
         view.show()
@@ -128,6 +118,27 @@ class Inari(QWidget):
         layout.setMargin(0)
         layout.addWidget(view)
         self.setLayout(layout)
+
+    def Load(self, filepath):
+        with open(filepath, "r") as file:
+            obj = json.loads(file.read())
+
+            for element in obj["elements"]:
+                item = None
+                if "imagePath" in element:
+                    item = InariGraphicsSvgItem(element["imagePath"])
+                else:
+                    print("[ERROR] All elements need an \"imagePath\".")
+                    return
+
+                if "positionX" in element:
+                    item.setPos(element["positionX"], item.pos().y())
+                if "positionY" in element:
+                    item.setPos(item.pos().x(), element["positionY"])
+                if "command" in element:
+                    item.setOnClickCommand(element["command"])
+
+                self.scene.addItem(item)
 
 
 class Window(QWidget):
@@ -139,6 +150,7 @@ class Window(QWidget):
         self.setWindowIcon(QIcon("icon.png"))
 
         inari = Inari(self)
+        inari.Load("./example.json")
         # TODO: Figur out the best API for shipped build
 
         layout = QHBoxLayout()

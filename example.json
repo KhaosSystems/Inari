@@ -1,0 +1,61 @@
+{
+    "elements": [
+        {
+            "imagePath": "./assets/eyebrow.svg"
+        },
+        {
+            "imagePath": "./assets/eyebrow_button01.svg",
+            "positionX": 14.66,
+            "positionY": 24.57,
+            "command": "command 1"
+        },
+        {
+            "imagePath": "./assets/eyebrow_button02.svg",
+            "positionX": 154.64,
+            "positionY": 31.2,
+            "command": "command 2"
+        },
+        {
+            "imagePath": "./assets/eyebrow_button03.svg",
+            "positionX": 206.37,
+            "positionY": 36.7,
+            "command": "command 3"
+        },
+        {
+            "imagePath": "./assets/eyebrow_button04.svg",
+            "positionX": 58,
+            "positionY": 97,
+            "command": "command 4"
+        },
+        {
+            "imagePath": "./assets/eyebrow_button04.svg",
+            "positionX": 84,
+            "positionY": 97,
+            "command": "command 5"
+        },
+        {
+            "imagePath": "./assets/eyebrow_button04.svg",
+            "positionX": 110,
+            "positionY": 97,
+            "command": "command 6"
+        },
+        {
+            "imagePath": "./assets/eyebrow_button04.svg",
+            "positionX": 136,
+            "positionY": 97,
+            "command": "command 7"
+        },
+        {
+            "imagePath": "./assets/eyebrow_button04.svg",
+            "positionX": 162,
+            "positionY": 97,
+            "command": "command 8"
+        },
+        {
+            "imagePath": "./assets/eyebrow_button05.svg",
+            "positionX": 78,
+            "positionY": 15,
+            "command": "command 9"
+        }
+    ]
+}
