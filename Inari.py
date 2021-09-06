@@ -1,3 +1,4 @@
+from os import terminal_size
 from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QStyleOptionGraphicsItem, QHBoxLayout, QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneMouseEvent, QGraphicsSceneMouseEvent, QGraphicsColorizeEffect, QGraphicsEffect, QGraphicsBlurEffect
 from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent
 from PySide2.QtCore import Qt, QObject, QPoint, QPointF
@@ -132,12 +133,19 @@ class Inari(QWidget):
                     return
 
                 if "positionX" in element:
-                    item.setPos(element["positionX"], item.pos().y())
+                    item.setX(element["positionX"])
                 if "positionY" in element:
-                    item.setPos(item.pos().x(), element["positionY"])
+                    item.setY(element["positionY"])
+                if "flip" in element:
+                    if element["flip"] == True:
+                        transform = item.transform()
+                        transform.scale(-1, 1)
+                        item.setX(item.boundingRect().x()-item.x())
+                        item.setTransform(transform)
                 if "command" in element:
                     item.setOnClickCommand(element["command"])
 
+                
                 self.scene.addItem(item)
 
 

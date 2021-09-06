@@ -1,61 +1,25 @@
 {
     "elements": [
-        {
-            "imagePath": "./assets/eyebrow.svg"
-        },
-        {
-            "imagePath": "./assets/eyebrow_button01.svg",
-            "positionX": 14.66,
-            "positionY": 24.57,
-            "command": "command 1"
-        },
-        {
-            "imagePath": "./assets/eyebrow_button02.svg",
-            "positionX": 154.64,
-            "positionY": 31.2,
-            "command": "command 2"
-        },
-        {
-            "imagePath": "./assets/eyebrow_button03.svg",
-            "positionX": 206.37,
-            "positionY": 36.7,
-            "command": "command 3"
-        },
-        {
-            "imagePath": "./assets/eyebrow_button04.svg",
-            "positionX": 58,
-            "positionY": 97,
-            "command": "command 4"
-        },
-        {
-            "imagePath": "./assets/eyebrow_button04.svg",
-            "positionX": 84,
-            "positionY": 97,
-            "command": "command 5"
-        },
-        {
-            "imagePath": "./assets/eyebrow_button04.svg",
-            "positionX": 110,
-            "positionY": 97,
-            "command": "command 6"
-        },
-        {
-            "imagePath": "./assets/eyebrow_button04.svg",
-            "positionX": 136,
-            "positionY": 97,
-            "command": "command 7"
-        },
-        {
-            "imagePath": "./assets/eyebrow_button04.svg",
-            "positionX": 162,
-            "positionY": 97,
-            "command": "command 8"
-        },
-        {
-            "imagePath": "./assets/eyebrow_button05.svg",
-            "positionX": 78,
-            "positionY": 15,
-            "command": "command 9"
-        }
+        { "imagePath": "./assets/eyebrow.svg", "positionX": 100, "flip": true },
+        { "imagePath": "./assets/eyebrow_button01.svg", "positionX": 114.66, "positionY": 24.57, "flip": true, "command": "rEyebrow 1" },
+        { "imagePath": "./assets/eyebrow_button02.svg", "positionX": 254.64, "positionY": 31.2, "flip": true, "command": "rEyebrow 2" },
+        { "imagePath": "./assets/eyebrow_button03.svg", "positionX": 306.37, "positionY": 36.7, "flip": true, "command": "rEyebrow 3" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 158, "positionY": 97, "flip": true, "command": "rEyebrow 4" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 184, "positionY": 97, "flip": true, "command": "rEyebrow 5" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 210, "positionY": 97, "flip": true, "command": "rEyebrow 6" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 236, "positionY": 97, "flip": true, "command": "rEyebrow 7" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 262, "positionY": 97, "flip": true, "command": "rEyebrow 8" },
+        { "imagePath": "./assets/eyebrow_button05.svg", "positionX": 178, "positionY": 15, "flip": true, "command": "rEyebrow 9" },
+
+        { "imagePath": "./assets/eyebrow.svg" },
+        { "imagePath": "./assets/eyebrow_button01.svg", "positionX": 14.66, "positionY": 24.57, "command": "lEyebrow 1" },
+        { "imagePath": "./assets/eyebrow_button02.svg", "positionX": 154.64, "positionY": 31.2, "command": "lEyebrow 2" },
+        { "imagePath": "./assets/eyebrow_button03.svg", "positionX": 206.37, "positionY": 36.7, "command": "lEyebrow 3" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 58, "positionY": 97, "command": "lEyebrow 4" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 84, "positionY": 97, "command": "lEyebrow 5" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 110, "positionY": 97, "command": "lEyebrow 6" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 136, "positionY": 97, "command": "lEyebrow 7" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 162, "positionY": 97, "command": "lEyebrow 8" },
+        { "imagePath": "./assets/eyebrow_button05.svg", "positionX": 78, "positionY": 15, "command": "lEyebrow 9" }
     ]
 }
