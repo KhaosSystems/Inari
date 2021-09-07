@@ -1,25 +1,36 @@
 {
     "elements": [
-        { "imagePath": "./assets/eyebrow.svg", "positionX": 100, "flip": true },
-        { "imagePath": "./assets/eyebrow_button01.svg", "positionX": 114.66, "positionY": 24.57, "flip": true, "command": "rEyebrow 1" },
-        { "imagePath": "./assets/eyebrow_button02.svg", "positionX": 254.64, "positionY": 31.2, "flip": true, "command": "rEyebrow 2" },
-        { "imagePath": "./assets/eyebrow_button03.svg", "positionX": 306.37, "positionY": 36.7, "flip": true, "command": "rEyebrow 3" },
-        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 158, "positionY": 97, "flip": true, "command": "rEyebrow 4" },
-        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 184, "positionY": 97, "flip": true, "command": "rEyebrow 5" },
-        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 210, "positionY": 97, "flip": true, "command": "rEyebrow 6" },
-        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 236, "positionY": 97, "flip": true, "command": "rEyebrow 7" },
-        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 262, "positionY": 97, "flip": true, "command": "rEyebrow 8" },
-        { "imagePath": "./assets/eyebrow_button05.svg", "positionX": 178, "positionY": 15, "flip": true, "command": "rEyebrow 9" },
+        { "imagePath": "./assets/eyebrow.svg", "positionX": -200 },
+        { "imagePath": "./assets/eyebrow_button01.svg", "positionX": -185.34, "positionY": 24.57, "command": "rEyebrow 1" },
+        { "imagePath": "./assets/eyebrow_button02.svg", "positionX": -45.36, "positionY": 31.2, "command": "rEyebrow 2" },
+        { "imagePath": "./assets/eyebrow_button03.svg", "positionX": 6.37, "positionY": 36.7, "command": "rEyebrow 3" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": -142, "positionY": 97, "command": "rEyebrow 4" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": -116, "positionY": 97, "command": "rEyebrow 5" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": -90, "positionY": 97, "command": "rEyebrow 6" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": -64, "positionY": 97, "command": "rEyebrow 7" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": -38, "positionY": 97, "command": "rEyebrow 8" },
+        { "imagePath": "./assets/eyebrow_button05.svg", "positionX": -122, "positionY": 15, "command": "rEyebrow 9" },
 
-        { "imagePath": "./assets/eyebrow.svg" },
-        { "imagePath": "./assets/eyebrow_button01.svg", "positionX": 14.66, "positionY": 24.57, "command": "lEyebrow 1" },
-        { "imagePath": "./assets/eyebrow_button02.svg", "positionX": 154.64, "positionY": 31.2, "command": "lEyebrow 2" },
-        { "imagePath": "./assets/eyebrow_button03.svg", "positionX": 206.37, "positionY": 36.7, "command": "lEyebrow 3" },
-        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 58, "positionY": 97, "command": "lEyebrow 4" },
-        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 84, "positionY": 97, "command": "lEyebrow 5" },
-        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 110, "positionY": 97, "command": "lEyebrow 6" },
-        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 136, "positionY": 97, "command": "lEyebrow 7" },
-        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 162, "positionY": 97, "command": "lEyebrow 8" },
-        { "imagePath": "./assets/eyebrow_button05.svg", "positionX": 78, "positionY": 15, "command": "lEyebrow 9" }
+        { "imagePath": "./assets/eyebrow.svg", "positionX": 200, "flip": true},
+        { "imagePath": "./assets/eyebrow_button01.svg", "positionX": 329.34, "positionY": 24.57, "flip": true, "command": "lEyebrow 1" },
+        { "imagePath": "./assets/eyebrow_button02.svg", "positionX": 277.36, "positionY": 31.2, "flip": true, "command": "lEyebrow 2" },
+        { "imagePath": "./assets/eyebrow_button03.svg", "positionX": 219.63, "positionY": 36.7, "flip": true, "command": "lEyebrow 3" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 422, "positionY": 97, "flip": true, "command": "lEyebrow 4" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 396, "positionY": 97, "flip": true, "command": "lEyebrow 5" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 370, "positionY": 97, "flip": true, "command": "lEyebrow 6" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 344, "positionY": 97, "flip": true, "command": "lEyebrow 7" },
+        { "imagePath": "./assets/eyebrow_button04.svg", "positionX": 318, "positionY": 97, "flip": true, "command": "lEyebrow 8" },
+        { "imagePath": "./assets/eyebrow_button05.svg", "positionX": 402, "positionY": 15, "flip": true, "command": "lEyebrow 9" },
+        
+        { "imagePath": "./assets/eye.svg", "positionX": -200, "positionY": 200 },
+        { "imagePath": "./assets/eye_white.svg", "positionX": -139, "positionY": 264 },
+        { "imagePath": "./assets/eye_pupil.svg", "positionX": -86, "positionY": 290, "command": "rEye 1" },
+
+        { "imagePath": "./assets/eye.svg", "positionX": 200, "positionY": 200, "flip": true },
+        { "imagePath": "./assets/eye_white.svg", "positionX": 261, "positionY": 264, "flip": true },
+        { "imagePath": "./assets/eye_pupil.svg", "positionX": 314, "positionY": 290, "flip": true, "command": "lEye 1" },
+
+        { "imagePath": "./assets/lowerface.svg", "positionX": -152, "positionY": 475, "flip": false },
+        { "imagePath": "./assets/lowerface_chin.svg", "positionX": 30.5, "positionY": 850, "flip": false, "command": "select chin" }
     ]
 }

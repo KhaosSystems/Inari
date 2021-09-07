@@ -1,11 +1,16 @@
 from os import terminal_size
 from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QStyleOptionGraphicsItem, QHBoxLayout, QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneMouseEvent, QGraphicsSceneMouseEvent, QGraphicsColorizeEffect, QGraphicsEffect, QGraphicsBlurEffect
-from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent, QCursor
+from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent, QCursor, QImage
 from PySide2.QtCore import Qt, QObject, QPoint, QPointF
 from PySide2.QtSvg import QGraphicsSvgItem, QSvgRenderer
 import json
 import sys
 
+# Problems:
+# - PySide is quite slow
+# - Hover effect seems impossible to do without C++
+# - Hover event is based on bounding box, not transparent
+# - Pixmap dosn't seem to be exposed to QGraphicsSvgItem
 
 class InariGraphicsBrightenEffect(QGraphicsEffect):
     def __init__(self):
@@ -27,6 +32,7 @@ class InariGraphicsBrightenEffect(QGraphicsEffect):
             pixmap = self.sourcePixmap(Qt.DeviceCoordinates, offset)
             painter.setWorldTransform(QTransform())
             painter.drawPixmap(offset, pixmap)
+
 
 class InariGraphicsSvgItem(QGraphicsSvgItem):
     # TODO: Remove posX and posY from constructor, this is TMP api stuff
@@ -93,7 +99,7 @@ class InariQGraphicsView(QGraphicsView):
         self.setGeometry(0, 0, 300, 300)
         self.setBackgroundBrush(QColor(45, 45, 45))
         self.setFrameShape(QFrame.NoFrame)
-
+        
     # override
     def wheelEvent(self, event:QWheelEvent):
         super().wheelEvent(event)
@@ -125,26 +131,38 @@ class Inari(QWidget):
             obj = json.loads(file.read())
 
             for element in obj["elements"]:
+                print("Adding element:")
+
                 item = None
                 if "imagePath" in element:
+                    print(" - imagePath: " + str(element["imagePath"]))
                     item = InariGraphicsSvgItem(element["imagePath"])
                 else:
                     print("[ERROR] All elements need an \"imagePath\".")
                     return
 
                 if "positionX" in element:
+                    print(" - positionX: " + str(element["positionX"]))
                     item.setX(element["positionX"])
+
                 if "positionY" in element:
+                    print(" - positionY: " + str(element["positionY"]))
                     item.setY(element["positionY"])
+
                 if "flip" in element:
+                    print(" - flip: " + str(element["flip"]))
                     if element["flip"] == True:
                         transform = item.transform()
                         transform.scale(-1, 1)
-                        item.setX(item.boundingRect().x()-item.x())
+                        item.setX(item.x() + item.boundingRect().width())
                         item.setTransform(transform)
+
                 if "command" in element:
+                    print(" - command: " + str(element["command"]))
                     item.setOnClickCommand(element["command"])
                 
+                print(item.boundingRect().width())
+
                 self.scene.addItem(item)
 
 
