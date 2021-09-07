@@ -1,8 +1,10 @@
 from os import terminal_size
 from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QStyleOptionGraphicsItem, QHBoxLayout, QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneMouseEvent, QGraphicsSceneMouseEvent, QGraphicsColorizeEffect, QGraphicsEffect, QGraphicsBlurEffect
-from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent, QCursor, QImage
+from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent, QCursor, QImage, QPixmap
 from PySide2.QtCore import Qt, QObject, QPoint, QPointF
 from PySide2.QtSvg import QGraphicsSvgItem, QSvgRenderer
+from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
+
 import json
 import sys
 
@@ -51,41 +53,60 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
         self.setCursor(QCursor(Qt.PointingHandCursor))
 
     # override
+    def paint(self, painter:QtGui.QPainter, option:QtWidgets.QStyleOptionGraphicsItem, widget:QtWidgets.QWidget=None) -> None:
+        svgRenderer = self.renderer()
+
+        svgRenderer.render(painter)
+
+        # used by self.verifyHover()
+        pixmap = QPixmap(self.boundingRect().size().toSize())
+        pixmap.fill(Qt.transparent)
+        pixmapPainter = QtGui.QPainter(pixmap)
+        svgRenderer.render(pixmapPainter)
+        pixmapPainter.end()
+        self.hoverMask = pixmap.toImage().createAlphaMask(QtCore.Qt.ImageConversionFlag.AutoColor)
+
+    # the default cursor hovering logic does not include transparency, this function should help verifying the hovering state
+    def verifyHover(self, cursorX:int, cursorY:int) -> bool:
+        print(bool(self.verifyHover(event.pos().x(), event.pos().y())))
+        return (self.hoverMask.pixelColor(cursorX, cursorY).red() < 1)
+
+    # override
     def hoverEnterEvent(self, event: QGraphicsSceneHoverEvent):
+        if not self.verifyHover(event.pos().x(), event.pos().y()):
+            return
+
         super().hoverEnterEvent(event)
-        
-        # add hover effect
-        effect = InariGraphicsBrightenEffect()
-        effect.setBrightness(1.25)
-        self.setGraphicsEffect(effect)
 
     # override
     def hoverLeaveEvent(self, event: QGraphicsSceneHoverEvent):
-        super().hoverLeaveEvent(event)
+        if not self.verifyHover(event.pos().x(), event.pos().y()):
+            return
 
-        self.setGraphicsEffect(None)
+        super().hoverLeaveEvent(event)
 
     # override
     def hoverMoveEvent(self, event: QGraphicsSceneHoverEvent):
+        if not self.verifyHover(event.pos().x(), event.pos().y()):
+            return
+
         super().hoverEnterEvent(event)
 
     # override
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
-        # run command
-        if self.command:
-            print(self.command)
+        if not self.verifyHover(event.pos().x(), event.pos().y()):
+            return
 
-        # add pressed effect
-        effect = InariGraphicsBrightenEffect()
-        effect.setBrightness(1.5)
-        self.setGraphicsEffect(effect)
+        if self.command:
+            # run command
+            print(self.command)
 
     # override
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent):
-        super().mouseReleaseEvent(event)
-        
-        self.setGraphicsEffect(None)
+        if not self.verifyHover(event.pos().x(), event.pos().y()):
+            return
 
+        super().mouseReleaseEvent(event)
 
 class InariQGraphicsView(QGraphicsView):
     def __init__(self, scene:QGraphicsScene, parent:QWidget=None):
