@@ -1,6 +1,6 @@
 from os import terminal_size
 from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QStyleOptionGraphicsItem, QHBoxLayout, QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneMouseEvent, QGraphicsSceneMouseEvent, QGraphicsColorizeEffect, QGraphicsEffect, QGraphicsBlurEffect
-from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent
+from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent, QCursor
 from PySide2.QtCore import Qt, QObject, QPoint, QPointF
 from PySide2.QtSvg import QGraphicsSvgItem, QSvgRenderer
 import json
@@ -28,13 +28,13 @@ class InariGraphicsBrightenEffect(QGraphicsEffect):
             painter.setWorldTransform(QTransform())
             painter.drawPixmap(offset, pixmap)
 
-
 class InariGraphicsSvgItem(QGraphicsSvgItem):
     # TODO: Remove posX and posY from constructor, this is TMP api stuff
     def __init__(self, fileName: str):
         super().__init__(fileName)
 
         self.command = None
+        self.setCursor(QCursor(Qt.ArrowCursor))
         self.setAcceptHoverEvents(1)
 
     # override; add highlighting stuff
@@ -42,6 +42,7 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
         
     def setOnClickCommand(self, command:str):
         self.command = command
+        self.setCursor(QCursor(Qt.PointingHandCursor))
 
     # override
     def hoverEnterEvent(self, event: QGraphicsSceneHoverEvent):
@@ -64,8 +65,6 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
 
     # override
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
-        super().mousePressEvent(event)
-
         # run command
         if self.command:
             print(self.command)
@@ -103,6 +102,7 @@ class InariQGraphicsView(QGraphicsView):
             self.scale(1.05, 1.05)
         else:
             self.scale(0.95, 0.95)
+
 
 class Inari(QWidget):
     def __init__(self, parent: QObject):
@@ -144,7 +144,6 @@ class Inari(QWidget):
                         item.setTransform(transform)
                 if "command" in element:
                     item.setOnClickCommand(element["command"])
-
                 
                 self.scene.addItem(item)
 
