@@ -147,7 +147,6 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
     # endregion
 
 
-
 class InariQGraphicsView(QGraphicsView):
     def __init__(self, scene: QGraphicsScene, parent: QWidget = None):
         super().__init__(scene, parent)
@@ -163,7 +162,7 @@ class InariQGraphicsView(QGraphicsView):
 
     # override
     def wheelEvent(self, event: QWheelEvent):
-        super().wheelEvent(event)
+        # super().wheelEvent(event) - enabling this causes the view to scroll vertically
 
         if event.delta() > 0:
             self.scale(1.05, 1.05)
