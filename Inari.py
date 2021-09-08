@@ -42,7 +42,6 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
         super().__init__(fileName)
 
         self.command = None
-        self.setCursor(QCursor(Qt.ArrowCursor))
         self.setAcceptHoverEvents(1)
 
     # override; add highlighting stuff
@@ -55,8 +54,9 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
     # override
     def paint(self, painter:QtGui.QPainter, option:QtWidgets.QStyleOptionGraphicsItem, widget:QtWidgets.QWidget=None) -> None:
         svgRenderer = self.renderer()
+        svgRenderer.render(painter, self.boundingRect())
 
-        svgRenderer.render(painter)
+        painter.drawRect(self.boundingRect())
 
         # used by self.verifyHover()
         pixmap = QPixmap(self.boundingRect().size().toSize())
@@ -71,7 +71,7 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
         print(bool(self.verifyHover(event.pos().x(), event.pos().y())))
         return (self.hoverMask.pixelColor(cursorX, cursorY).red() < 1)
 
-    # override
+"""     # override
     def hoverEnterEvent(self, event: QGraphicsSceneHoverEvent):
         if not self.verifyHover(event.pos().x(), event.pos().y()):
             return
@@ -107,7 +107,7 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
             return
 
         super().mouseReleaseEvent(event)
-
+ """
 class InariQGraphicsView(QGraphicsView):
     def __init__(self, scene:QGraphicsScene, parent:QWidget=None):
         super().__init__(scene, parent)
