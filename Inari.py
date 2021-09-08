@@ -50,14 +50,13 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
 
         self.command = None
         self.hovering = False
-
-        self.setAcceptHoverEvents(1)
-
-    # override; add highlighting stuff
-    # def paint(self, painter:QPainter, option:QStyleOptionGraphicsItem, widget:QWidget=None):
+        self.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
+        self.setAcceptHoverEvents(False)
 
     def setOnClickCommand(self, command: str):
         self.command = command
+        self.setAcceptedMouseButtons(Qt.MouseButton.AllButtons)
+        self.setAcceptHoverEvents(True)
 
     @override
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: QtWidgets.QWidget = None) -> None:
@@ -78,27 +77,23 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
             QtCore.Qt.ImageConversionFlag.AutoColor)
 
     # region Custom verified mouse events
-    # the default cursor hovering logic does not include transparency, this function should help verifying the hovering state
-    def verifyHover(self, cursorX: int, cursorY: int) -> bool:
-        return (self.hoverMask.pixelColor(cursorX, cursorY).red() < 1)
-
     def verifiedHoverMoveEvent(self, event: QGraphicsSceneHoverEvent) -> None:
         super().hoverMoveEvent(event)
 
     def verifiedHoverEnterEvent(self, event: QGraphicsSceneHoverEvent) -> None:
         super().hoverEnterEvent(event)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
 
     def verifiedHoverLeaveEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
         super().hoverLeaveEvent(event)
+        self.setCursor(Qt.CursorShape.OpenHandCursor)
 
     def verifiedMousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        super().mousePressEvent(event)
-
         if self.command:
             print(self.command)
 
     def verifiedMouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent):
-        super().mouseReleaseEvent(event)
+        pass
     # endregion
 
     # region Overridden QT mouse events
@@ -134,12 +129,23 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
     def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
         if self.verifyHover(event.pos().x(), event.pos().y()):
             self.verifiedMousePressEvent(event)
+        else:
+            super().mousePressEvent(event)
 
     @override
     def mouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent):
         if self.verifyHover(event.pos().x(), event.pos().y()):
             self.verifiedMouseReleaseEvent(event)
+        else:
+            super().mouseReleaseEvent(event)
     # endregion
+
+    # region Helpers
+    def verifyHover(self, cursorX: int, cursorY: int) -> bool:
+        # the default cursor hovering logic does not include transparency, this function is used to verify the correct hovering state.
+        return (self.hoverMask.pixelColor(cursorX, cursorY).red() < 1)
+    # endregion
+
 
 
 class InariQGraphicsView(QGraphicsView):
