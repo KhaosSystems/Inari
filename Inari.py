@@ -1,6 +1,6 @@
 from os import terminal_size
 from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QStyleOptionGraphicsItem, QHBoxLayout, QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneMouseEvent, QGraphicsSceneMouseEvent, QGraphicsColorizeEffect, QGraphicsEffect, QGraphicsBlurEffect
-from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent, QCursor, QImage, QPixmap
+from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent, QCursor, QImage, QPixmap, QBitmap
 from PySide2.QtCore import Qt, QObject, QPoint, QPointF
 from PySide2.QtSvg import QGraphicsSvgItem, QSvgRenderer
 from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
@@ -57,11 +57,15 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
         image = pixmap.toImage()
-        painter.drawImage(self.boundingRect(), image)
+        #painter.drawImage(self.boundingRect(), image)
         
+
+        painter.drawImage(self.boundingRect(), self.alphaMask)
+
         if self.hovering:
-            # painter.setClipRegion(QtGui.QRegion(QPixmap().fromImage(self.alphaMask)))
-            painter.fillRect(self.boundingRect(), QtGui.QColor(255, 255, 255, 100))
+            clippingMask = QtGui.QRegion(QtGui.QBitmap().fromImage(self.alphaMask))
+            painter.setClipRegion(clippingMask)
+            painter.fillRect(self.boundingRect(), QtGui.QColor(255, 0, 0, 100))
        
 
         # DEBUG
