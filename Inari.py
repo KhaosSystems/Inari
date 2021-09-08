@@ -7,12 +7,6 @@ from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
 import json
 import sys
 
-# Problems:
-# - PySide is quite slow
-# - Hover effect seems impossible to do without C++
-# - Hover event is based on bounding box, not transparent
-# - Pixmap dosn't seem to be exposed to QGraphicsSvgItem
-
 # override decorator for clarity
 # TODO: Do propper implementation with error checking and and to KhaosSystemsUtils.py
 def override(f):
@@ -25,6 +19,7 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
 
         self.command = None
         self.hovering = False
+        self.clicking = False
         self.alphaMask = QImage()
         self.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
         self.setAcceptHoverEvents(False)
@@ -57,15 +52,18 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
         image = pixmap.toImage()
-        #painter.drawImage(self.boundingRect(), image)
-        
+        painter.drawImage(self.boundingRect(), image)
 
-        painter.drawImage(self.boundingRect(), self.alphaMask)
+        # painter.drawImage(self.boundingRect(), self.alphaMask)
+        if self.hovering == True:
+            # TODO: Make the clipping mask scale with the widget
+            """clippingMask = QtGui.QRegion(QtGui.QBitmap().fromImage(self.alphaMask))
+            painter.setClipRegion(clippingMask)"""
+            if self.clicking == True:
+                painter.fillRect(self.boundingRect(), QtGui.QColor(255, 255, 255, 150))
+            else:
+                painter.fillRect(self.boundingRect(), QtGui.QColor(255, 255, 255, 100))
 
-        if self.hovering:
-            clippingMask = QtGui.QRegion(QtGui.QBitmap().fromImage(self.alphaMask))
-            painter.setClipRegion(clippingMask)
-            painter.fillRect(self.boundingRect(), QtGui.QColor(255, 0, 0, 100))
        
 
         # DEBUG
@@ -88,9 +86,10 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
     def verifiedMousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
         if self.command:
             print(self.command)
+        self.update()
 
     def verifiedMouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent):
-        pass
+        self.update()
     # endregion
 
     # region Overridden QT mouse events
@@ -125,6 +124,7 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
     @override
     def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
         if self.verifyHover(event.pos().x(), event.pos().y()):
+            self.clicking = True
             self.verifiedMousePressEvent(event)
         else:
             super().mousePressEvent(event)
@@ -132,6 +132,7 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
     @override
     def mouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent):
         if self.verifyHover(event.pos().x(), event.pos().y()):
+            self.clicking = False
             self.verifiedMouseReleaseEvent(event)
         else:
             super().mouseReleaseEvent(event)
