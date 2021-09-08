@@ -15,33 +15,8 @@ import sys
 
 # override decorator for clarity
 # TODO: Do propper implementation with error checking and and to KhaosSystemsUtils.py
-
-
 def override(f):
     return f
-
-
-class InariGraphicsBrightenEffect(QGraphicsEffect):
-    def __init__(self):
-        super().__init__()
-
-    def setBrightness(self, brightness):
-        pass
-
-    # override
-    def draw(self, painter: QPainter):
-        offset = QPoint()
-
-        if self.sourceIsPixmap():
-            # No point in drawing in device coordinates (pixmap will be scaled anyways).
-            pixmap = self.sourcePixmap(Qt.LogicalCoordinates, offset)
-            painter.drawPixmap(offset, pixmap)
-        else:
-            # Draw pixmap in device coordinates to avoid pixmap scaling;
-            pixmap = self.sourcePixmap(Qt.DeviceCoordinates, offset)
-            painter.setWorldTransform(QTransform())
-            painter.drawPixmap(offset, pixmap)
-
 
 class InariGraphicsSvgItem(QGraphicsSvgItem):
     # TODO: Remove posX and posY from constructor, this is TMP api stuff
@@ -50,6 +25,7 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
 
         self.command = None
         self.hovering = False
+        self.hoverMask = QImage()
         self.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
         self.setAcceptHoverEvents(False)
 
@@ -60,21 +36,31 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
 
     @override
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: QtWidgets.QWidget = None) -> None:
-        svgRenderer = self.renderer()
+        # TODO: There should be a way of rendering the QPixmap without "pixmapPainter", just using "painter" instead...
 
-        svgRenderer.render(painter, self.boundingRect())
-
-        # debug bounding rect
-        painter.drawRect(self.boundingRect())
-
-        # used by self.verifyHover()
-        pixmap = QPixmap(self.boundingRect().size().toSize())
+        # Render a QPixmap from the SVG.
+        pixmap = QPixmap(painter.device().width(), painter.device().height())
         pixmap.fill(Qt.transparent)
-        pixmapPainter = QtGui.QPainter(pixmap)
-        svgRenderer.render(pixmapPainter)
+        pixmapPainter = QtGui.QPainter()
+        pixmapPainter.begin(pixmap)
+        pixmapPainter.setRenderHint(QtGui.QPainter.Antialiasing)
+        pixmapPainter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
+        self.renderer().render(pixmapPainter) 
         pixmapPainter.end()
-        self.hoverMask = pixmap.toImage().createAlphaMask(
-            QtCore.Qt.ImageConversionFlag.AutoColor)
+
+        # Configure and render pixmap to screen.
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
+        painter.drawPixmap(self.boundingRect(), pixmap, pixmap.rect())
+
+        # Render self.hoverMask; used by self.verifyHover().
+        # One possible optimization to the hover verification process would be to downsize this mask to a lower resolution.
+        self.hoverMask = pixmap.toImage().createAlphaMask(QtCore.Qt.ImageConversionFlag.AutoColor)
+
+        # DEBUG
+        # painter.drawImage(self.boundingRect(), self.hoverMask)
+        # painter.drawRect(self.boundingRect())
+
 
     # region Custom verified mouse events
     def verifiedHoverMoveEvent(self, event: QGraphicsSceneHoverEvent) -> None:
@@ -163,7 +149,6 @@ class InariQGraphicsView(QGraphicsView):
     # override
     def wheelEvent(self, event: QWheelEvent):
         # super().wheelEvent(event) - enabling this causes the view to scroll vertically
-
         if event.delta() > 0:
             self.scale(1.05, 1.05)
         else:
@@ -236,7 +221,6 @@ class Window(QWidget):
 
         inari = Inari(self)
         inari.Load("./example.json")
-        # TODO: Figur out the best API for shipped build
 
         layout = QHBoxLayout()
         layout.setMargin(0)
