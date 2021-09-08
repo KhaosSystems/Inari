@@ -25,7 +25,7 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
 
         self.command = None
         self.hovering = False
-        self.hoverMask = QImage()
+        self.alphaMask = QImage()
         self.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
         self.setAcceptHoverEvents(False)
 
@@ -48,20 +48,25 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
         self.renderer().render(pixmapPainter) 
         pixmapPainter.end()
 
+        # Render self.alphaMask; used by self.verifyHover() and mask for the hover effect.
+        # One possible optimization to the hover verification process would be to downsize this mask to a lower resolution.
+        self.alphaMask = pixmap.toImage().createAlphaMask(QtCore.Qt.ImageConversionFlag.AutoColor)
+
         # Configure and render pixmap to screen.
         # TODO: Implement color event with QImage::applyColorTransform
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
         image = pixmap.toImage()
         painter.drawImage(self.boundingRect(), image)
-
-        # Render self.hoverMask; used by self.verifyHover().
-        # One possible optimization to the hover verification process would be to downsize this mask to a lower resolution.
-        self.hoverMask = pixmap.toImage().createAlphaMask(QtCore.Qt.ImageConversionFlag.AutoColor)
+        
+        if self.hovering:
+            # painter.setClipRegion(QtGui.QRegion(QPixmap().fromImage(self.alphaMask)))
+            painter.fillRect(self.boundingRect(), QtGui.QColor(255, 255, 255, 100))
+       
 
         # DEBUG
-        # painter.drawImage(self.boundingRect(), self.hoverMask)
-        # painter.drawRect(self.boundingRect())
+        # painter.drawImage(self.boundingRect(), self.alphaMask)
+        # painter.drawRect(painter.viewport())
 
 
     # region Custom verified mouse events
@@ -131,7 +136,7 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
     # region Helpers
     def verifyHover(self, cursorX: int, cursorY: int) -> bool:
         # the default cursor hovering logic does not include transparency, this function is used to verify the correct hovering state.
-        return (self.hoverMask.pixelColor(cursorX, cursorY).red() < 1)
+        return (self.alphaMask.pixelColor(cursorX, cursorY).red() < 1)
     # endregion
 
 
