@@ -9,8 +9,11 @@ import sys
 
 # override decorator for clarity
 # TODO: Do propper implementation with error checking and and to KhaosSystemsUtils.py
+
+
 def override(f):
     return f
+
 
 class InariGraphicsSvgItem(QGraphicsSvgItem):
     # TODO: Remove posX and posY from constructor, this is TMP api stuff
@@ -24,7 +27,7 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
         self.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
         self.setAcceptHoverEvents(False)
 
-    def setOnClickCommand(self, command: str):
+    def setOnClickCommand(self, command: str) -> None:
         self.command = command
         self.setAcceptedMouseButtons(Qt.MouseButton.AllButtons)
         self.setAcceptHoverEvents(True)
@@ -40,12 +43,13 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
         pixmapPainter.begin(pixmap)
         pixmapPainter.setRenderHint(QtGui.QPainter.Antialiasing)
         pixmapPainter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
-        self.renderer().render(pixmapPainter) 
+        self.renderer().render(pixmapPainter)
         pixmapPainter.end()
 
         # Render self.alphaMask; used by self.verifyHover() and mask for the hover effect.
         # One possible optimization to the hover verification process would be to downsize this mask to a lower resolution.
-        self.alphaMask = pixmap.toImage().createAlphaMask(QtCore.Qt.ImageConversionFlag.AutoColor)
+        self.alphaMask = pixmap.toImage().createAlphaMask(
+            QtCore.Qt.ImageConversionFlag.AutoColor)
 
         # Configure and render pixmap to screen.
         # TODO: Implement color event with QImage::applyColorTransform
@@ -60,18 +64,18 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
             """clippingMask = QtGui.QRegion(QtGui.QBitmap().fromImage(self.alphaMask))
             painter.setClipRegion(clippingMask)"""
             if self.clicking == True:
-                painter.fillRect(self.boundingRect(), QtGui.QColor(255, 255, 255, 150))
+                painter.fillRect(self.boundingRect(),
+                                 QtGui.QColor(255, 255, 255, 150))
             else:
-                painter.fillRect(self.boundingRect(), QtGui.QColor(255, 255, 255, 100))
-
-       
+                painter.fillRect(self.boundingRect(),
+                                 QtGui.QColor(255, 255, 255, 100))
 
         # DEBUG
         # painter.drawImage(self.boundingRect(), self.alphaMask)
         # painter.drawRect(painter.viewport())
 
-
     # region Custom verified mouse events
+
     def verifiedHoverMoveEvent(self, event: QGraphicsSceneHoverEvent) -> None:
         super().hoverMoveEvent(event)
 
@@ -86,6 +90,7 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
     def verifiedMousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
         if self.command:
             print(self.command)
+
         self.update()
 
     def verifiedMouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent):
@@ -145,6 +150,10 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
     # endregion
 
 
+class InariQGraphicsScene(QGraphicsScene):
+    def __init__(self, parentItem:QtWidgets.QGraphicsItem) -> None:
+        super().__init__(parentItem)
+
 class InariQGraphicsView(QGraphicsView):
     def __init__(self, scene: QGraphicsScene, parent: QWidget = None):
         super().__init__(scene, parent)
@@ -158,14 +167,12 @@ class InariQGraphicsView(QGraphicsView):
         self.setBackgroundBrush(QColor(45, 45, 45))
         self.setFrameShape(QFrame.NoFrame)
 
-    # override
+    @override
     def wheelEvent(self, event: QWheelEvent):
-        # super().wheelEvent(event) - enabling this causes the view to scroll vertically
         if event.delta() > 0:
             self.scale(1.05, 1.05)
         else:
             self.scale(0.95, 0.95)
-
 
 class Inari(QWidget):
     def __init__(self, parent: QObject):
@@ -173,14 +180,14 @@ class Inari(QWidget):
 
         self.setStyleSheet("background-color: black")
 
-        self.scene = QGraphicsScene(self)
+        self.scene = InariQGraphicsScene(self)
 
-        view = InariQGraphicsView(self.scene, self)
-        view.show()
-
+        self.view = InariQGraphicsView(self.scene, self)
+        self.view.show()
+        
         layout = QHBoxLayout()
         layout.setMargin(0)
-        layout.addWidget(view)
+        layout.addWidget(self.view)
         self.setLayout(layout)
 
     def Load(self, filepath):
@@ -221,6 +228,21 @@ class Inari(QWidget):
                 print(item.boundingRect().width())
 
                 self.scene.addItem(item)
+
+            # calculate scene size and set the starting position
+            # for some reason the y axis goes from - to +; thanks QT Group that totally didn't cost me like 20 minutes of confusion?..
+            sceneSizePadding = 512
+            itemsBoundingRect = self.scene.itemsBoundingRect()
+            itemsBoundingRect.setTop(itemsBoundingRect.top() - sceneSizePadding)
+            itemsBoundingRect.setBottom(itemsBoundingRect.bottom() + sceneSizePadding)
+            itemsBoundingRect.setLeft(itemsBoundingRect.left() - sceneSizePadding)
+            itemsBoundingRect.setRight(itemsBoundingRect.right() + sceneSizePadding)
+            self.scene.setSceneRect(itemsBoundingRect)
+            self.scene.addRect(itemsBoundingRect)
+            
+            # TODO: set the starting position, unhiding and monitoring the scrollbars might be a good starting point
+            self.view.horizontalScrollBar().setRange(0, 1)
+            self.view.horizontalScrollBar().setValue(0.5)
 
 
 class Window(QWidget):
