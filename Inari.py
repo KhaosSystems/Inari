@@ -1,9 +1,9 @@
 from os import terminal_size
-from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QStyleOptionGraphicsItem, QHBoxLayout, QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneMouseEvent, QGraphicsSceneMouseEvent, QGraphicsColorizeEffect, QGraphicsEffect, QGraphicsBlurEffect
-from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent, QCursor, QImage, QPixmap
-from PySide2.QtCore import Qt, QObject, QPoint, QPointF
-from PySide2.QtSvg import QGraphicsSvgItem, QSvgRenderer
-from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
+from PySide6.QtWidgets import QApplication, QWidget, QPushButton, QStyleOptionGraphicsItem, QHBoxLayout, QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneMouseEvent, QGraphicsSceneMouseEvent, QGraphicsColorizeEffect, QGraphicsEffect, QGraphicsBlurEffect
+from PySide6.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent, QCursor, QImage, QPixmap
+from PySide6.QtCore import Qt, QObject, QPoint, QPointF
+from PySide6.QtSvg import QSvgRenderer
+from PySide6 import QtCore, QtGui, QtWidgets, QtSvg, QtSvgWidgets
 import json
 import sys
 
@@ -18,7 +18,7 @@ import sys
 def override(f):
     return f
 
-class InariGraphicsSvgItem(QGraphicsSvgItem):
+class InariGraphicsSvgItem(QtSvgWidgets.QGraphicsSvgItem):
     # TODO: Remove posX and posY from constructor, this is TMP api stuff
     def __init__(self, fileName: str):
         super().__init__(fileName)
@@ -49,9 +49,12 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
         pixmapPainter.end()
 
         # Configure and render pixmap to screen.
+        # TODO: Implement color event with QImage::applyColorTransform
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
-        painter.drawPixmap(self.boundingRect(), pixmap, pixmap.rect())
+        image = pixmap.toImage()
+        print(image.colorTable())
+        painter.drawImage(self.boundingRect(), image)
 
         # Render self.hoverMask; used by self.verifyHover().
         # One possible optimization to the hover verification process would be to downsize this mask to a lower resolution.
@@ -167,7 +170,7 @@ class Inari(QWidget):
         view.show()
 
         layout = QHBoxLayout()
-        layout.setMargin(0)
+        #layout.setMargin(0) - depricated in PySide6
         layout.addWidget(view)
         self.setLayout(layout)
 
@@ -223,7 +226,7 @@ class Window(QWidget):
         inari.Load("./example.json")
 
         layout = QHBoxLayout()
-        layout.setMargin(0)
+        #layout.setMargin(0) - depricated in PySide6
         layout.addWidget(inari)
         self.setLayout(layout)
 
