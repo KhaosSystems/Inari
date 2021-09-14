@@ -4,18 +4,22 @@ import typing
 import json
 import sys
 
-
+# TODO: When alt is down, don't send mouse events to items.
+# TODO: Fix bug with mirrored items don't produce correct F action.
+# TODO: Infinite canvas, set canvas size and adjust starting position.
 
 class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
     _useComplexHoverCollision: bool = False
-    _hovering: bool = False
-    _clicking: bool = False
+    _isUnderMouse: bool = False
+    _isClicking: bool = False
     _alphaMask: QtGui.QImage = QtGui.QImage()
 
-    def __init__(self, fileName: str, parentItem:typing.Optional[QtWidgets.QGraphicsItem]=...) -> None:
+    def __init__(self, fileName: str, parentItem: typing.Optional[QtWidgets.QGraphicsItem] = ...) -> None:
         super().__init__(fileName)
-        self.setAcceptMouseEvents(True)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
+        # TODO: This is temporary set in Load, fix
+        # self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
+        # self.setAcceptedMouseButtons(QtCore.Qt.MouseButton.AllButtons)
+        # self.setAcceptHoverEvents(True)
 
     # Overridden from QtSvg.QGraphicsSvgItem
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: QtWidgets.QWidget = None) -> None:
@@ -32,105 +36,50 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
 
         # Render self.alphaMask; used by self.verifyHover() and mask for the hover effect.
         # One possible optimization to the hover verification process would be to downsize this mask to a lower resolution.
-        self._alphaMask = pixmap.toImage().createAlphaMask(
-            QtCore.Qt.ImageConversionFlag.AutoColor)
+        self._alphaMask = pixmap.toImage().createAlphaMask(QtCore.Qt.ImageConversionFlag.AutoColor)
 
         # Configure and render pixmap to screen.
-        # TODO: Implement color event with QImage::applyColorTransform
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
         image = pixmap.toImage()
         painter.drawImage(self.boundingRect(), image)
 
-        # painter.drawImage(self.boundingRect(), self.alphaMask)
-        if self._hovering or self.isSelected():
-            # TODO: Make the clipping mask scale with the widget
-            """clippingMask = QtGui.QRegion(QtGui.QBitmap().fromImage(self.alphaMask))
-            painter.setClipRegion(clippingMask)"""
-            if self._clicking == True:
-                painter.fillRect(self.boundingRect(), QtGui.QColor(255, 255, 255, 150))
-            else:
-                painter.fillRect(self.boundingRect(), QtGui.QColor(255, 255, 255, 100))
+        # Highlighting. TODO: Find a way of highlighting without using screen.
+        if self.isUnderMouse() or self.isSelected():
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode_Screen)
+            painter.drawImage(self.boundingRect(), image)
+            if self.isClicking() == True:
+                painter.drawImage(self.boundingRect(), image)
 
-        # DEBUG
-        # painter.drawImage(self.boundingRect(), self.alphaMask)
-        # painter.drawRect(painter.viewport())
+    def isUnderMouse(self) -> bool:
+        return self._isUnderMouse
 
-    # region Methods related to (verified) mouse events; you can override these :)
-    def setAcceptMouseEvents(self, enabled: bool) -> bool:
-        if enabled:
-            self.setAcceptedMouseButtons(QtCore.Qt.MouseButton.AllButtons)
-            self.setAcceptHoverEvents(True)
-        else:
-            self.setAcceptedMouseButtons(QtCore.Qt.MouseButton.NoButton)
-            self.setAcceptHoverEvents(False)
-
-    def verifyQtHoverEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> bool:
-        if self._useComplexHoverCollision:
-            return (self._alphaMask.pixelColor(event.pos().x(), event.pos().y()).red() < 1)
-        else:
-            return True
-
-    def verifiedHoverMoveEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
-        pass
-
-    def verifiedHoverEnterEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
-        self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
-
-    def verifiedHoverLeaveEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
-        pass 
-
-    def verifiedMousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        super().mousePressEvent(event)
-
-    def verifiedMouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        super().mouseReleaseEvent(event)
-
-    # endregion
-
-    # region We'll fire you if you override these methods.
-    def hoverMoveEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
-        if self.verifyQtHoverEvent(event):
-            self.verifiedHoverMoveEvent(event)
-            if not self._hovering:
-                self.__hovering = True
-                self.verifiedHoverEnterEvent(event)
-        else:
-            if self._hovering:
-                self._hovering = False
-                self.verifiedHoverLeaveEvent(event)
-
-    def hoverEnterEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
-        if self.verifyQtHoverEvent(event):
-            if not self._hovering:
-                self._hovering = True
-                self.verifiedHoverEnterEvent(event)
-
-    def hoverLeaveEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
-        if self._hovering:
-            self._hovering = False
-            self.verifiedHoverLeaveEvent(event)
+    def isClicking(self) -> bool:
+        return self._isClicking
 
     def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        if self._hovering:
-            self._clicking = True
-            event.setAccepted(True)
-            self.verifiedMousePressEvent(event)
-        else:
-            raise NotImplementedError
+        super().mousePressEvent(event)
+        self._isClicking = True
+        self.update()
 
     def mouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        if self._clicking:
-            self._clicking = False
-            self.verifiedMouseReleaseEvent(event)
-        else:
-            raise NotImplementedError
-    # endregion
+        super().mouseReleaseEvent(event)
+        self._isClicking = False
+        self.update()
+
+    def hoverEnterEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
+        super().hoverEnterEvent(event)
+        self._isUnderMouse = True
+
+    def hoverLeaveEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
+        super().hoverLeaveEvent(event)
+        self._isUnderMouse = False
 
 
 class InariBackdropItem(QtWidgets.QGraphicsRectItem):
     def __init__(self, x: float, y: float, w: float, h: float, parent: typing.Optional[QtWidgets.QGraphicsItem]) -> None:
         super().__init__(x, y, w, h, parent=parent)
+        self.transform
 
 
 class InariQGraphicsScene(QtWidgets.QGraphicsScene):
@@ -138,8 +87,13 @@ class InariQGraphicsScene(QtWidgets.QGraphicsScene):
         super().__init__(parentItem)
         QtCore.QObject.connect(self, QtCore.SIGNAL("selectionChanged()"), self.selectionChangedSignal)
 
-    def selectionChangedSignal(self):
-        pass # Update in Maya
+    def selectionChangedSignal(self) -> None:
+        pass  # Update in Maya
+
+    def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
+        print(event.scenePos())
+        super().mousePressEvent(event)
+
 
 class InariQGraphicsView(QtWidgets.QGraphicsView):
     def __init__(self, scene: QtWidgets.QGraphicsScene, parent: QtWidgets.QWidget = None):
@@ -157,16 +111,31 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         super().keyPressEvent(event)
 
+        if event.key() == QtCore.Qt.Key_F:
+            # Fix bug with scaled items.
+            selectionBounds = QtCore.QRectF(0, 0, 0, 0)
+            for item in self.scene().selectedItems():
+                selectionBounds.setX(min(selectionBounds.x(), item.pos().x()))
+                selectionBounds.setY(max(selectionBounds.y(), item.pos().y()))
+                selectionBounds.setSize(QtCore.QSizeF(0, 0))
+                selectionBounds.setWidth(
+                    max(selectionBounds.width(), item.boundingRect().width()))
+                selectionBounds.setHeight(
+                    max(selectionBounds.height(), item.boundingRect().height()))
+            selectionBounds = selectionBounds.marginsAdded(
+                QtCore.QMarginsF(64, 64, 64, 64))
+            self.fitInView(selectionBounds, QtCore.Qt.KeepAspectRatio)
+
+        # Handle KeyboardModifiers
         if bool(QtWidgets.QApplication.queryKeyboardModifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
             self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
 
     def keyReleaseEvent(self, event: QtGui.QKeyEvent) -> None:
         super().keyReleaseEvent(event)
 
+        # Handle KeyboardModifiers
         if not bool(QtWidgets.QApplication.queryKeyboardModifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
             self.setDragMode(QtWidgets.QGraphicsView.DragMode.RubberBandDrag)
-
-        
 
     # Overridden from QtWidgets.QGraphicsView
     def wheelEvent(self, event: QtGui.QWheelEvent):
@@ -221,6 +190,18 @@ class InariWidget(QtWidgets.QWidget):
                         transform.scale(-1, 1)
                         item.setX(item.x() + item.boundingRect().width())
                         item.setTransform(transform)
+
+                # TODO: This should happen inside the item, not here
+                if "command" in element:
+                    item.setFlag(
+                        QtWidgets.QGraphicsItem.ItemIsSelectable, True)
+                    item.setAcceptedMouseButtons(
+                        QtCore.Qt.MouseButton.AllButtons)
+                    item.setAcceptHoverEvents(True)
+                else:
+                    item.setAcceptedMouseButtons(
+                        QtCore.Qt.MouseButton.NoButton)
+                    item.setAcceptHoverEvents(False)
 
                 self.scene.addItem(item)
 
