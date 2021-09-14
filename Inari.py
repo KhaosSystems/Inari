@@ -1,45 +1,28 @@
 from os import terminal_size
-from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QStyleOptionGraphicsItem, QHBoxLayout, QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneMouseEvent, QGraphicsSceneMouseEvent, QGraphicsColorizeEffect, QGraphicsEffect, QGraphicsBlurEffect
-from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent, QCursor, QImage, QPixmap, QBitmap
-from PySide2.QtCore import Qt, QObject, QPoint, QPointF
-from PySide2.QtSvg import QGraphicsSvgItem, QSvgRenderer
 from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
+import typing
 import json
 import sys
 
-# override decorator for clarity
-# TODO: Do propper implementation with error checking and and to KhaosSystemsUtils.py
-def override(f):
-    return f
 
-class InariGraphicsSvgItem(QGraphicsSvgItem):
-    # TODO: Remove posX and posY from constructor, this is TMP api stuff
-    def __init__(self, fileName: str):
+
+class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
+    _useComplexHoverCollision: bool = False
+    _hovering: bool = False
+    _clicking: bool = False
+    _alphaMask: QtGui.QImage = QtGui.QImage()
+
+    def __init__(self, fileName: str, parentItem:typing.Optional[QtWidgets.QGraphicsItem]=...) -> None:
         super().__init__(fileName)
+        self.setAcceptMouseEvents(True)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
 
-        self.commandInterpreter = InariCommandInterpreter()
-        self.command = None
-        self.hovering = False
-        self.clicking = False
-        self.alphaMask = QImage()
-        self.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
-        self.setAcceptHoverEvents(False)
-
-    def setOnClickCommand(self, command: str) -> None:
-        self.command = command
-        self.setAcceptedMouseButtons(Qt.MouseButton.AllButtons)
-        self.setAcceptHoverEvents(True)
-
-    def setCommandInterpreter(self, commandInterpreter:InariCommandInterpreter) -> None:
-        self.commandInterpreter = commandInterpreter
-
-    @override
+    # Overridden from QtSvg.QGraphicsSvgItem
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: QtWidgets.QWidget = None) -> None:
-        # TODO: There should be a way of rendering the QPixmap without "pixmapPainter", just using "painter" instead...
-
         # Render a QPixmap from the SVG.
-        pixmap = QPixmap(painter.device().width(), painter.device().height())
-        pixmap.fill(Qt.transparent)
+        pixmap = QtGui.QPixmap(painter.device().width(),
+                               painter.device().height())
+        pixmap.fill(QtCore.Qt.transparent)
         pixmapPainter = QtGui.QPainter()
         pixmapPainter.begin(pixmap)
         pixmapPainter.setRenderHint(QtGui.QPainter.Antialiasing)
@@ -49,7 +32,7 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
 
         # Render self.alphaMask; used by self.verifyHover() and mask for the hover effect.
         # One possible optimization to the hover verification process would be to downsize this mask to a lower resolution.
-        self.alphaMask = pixmap.toImage().createAlphaMask(
+        self._alphaMask = pixmap.toImage().createAlphaMask(
             QtCore.Qt.ImageConversionFlag.AutoColor)
 
         # Configure and render pixmap to screen.
@@ -60,136 +43,154 @@ class InariGraphicsSvgItem(QGraphicsSvgItem):
         painter.drawImage(self.boundingRect(), image)
 
         # painter.drawImage(self.boundingRect(), self.alphaMask)
-        if self.hovering == True:
+        if self._hovering or self.isSelected():
             # TODO: Make the clipping mask scale with the widget
             """clippingMask = QtGui.QRegion(QtGui.QBitmap().fromImage(self.alphaMask))
             painter.setClipRegion(clippingMask)"""
-            if self.clicking == True:
-                painter.fillRect(self.boundingRect(),
-                                 QtGui.QColor(255, 255, 255, 150))
+            if self._clicking == True:
+                painter.fillRect(self.boundingRect(), QtGui.QColor(255, 255, 255, 150))
             else:
-                painter.fillRect(self.boundingRect(),
-                                 QtGui.QColor(255, 255, 255, 100))
+                painter.fillRect(self.boundingRect(), QtGui.QColor(255, 255, 255, 100))
 
         # DEBUG
         # painter.drawImage(self.boundingRect(), self.alphaMask)
         # painter.drawRect(painter.viewport())
 
-    # region Custom verified mouse events
+    # region Methods related to (verified) mouse events; you can override these :)
+    def setAcceptMouseEvents(self, enabled: bool) -> bool:
+        if enabled:
+            self.setAcceptedMouseButtons(QtCore.Qt.MouseButton.AllButtons)
+            self.setAcceptHoverEvents(True)
+        else:
+            self.setAcceptedMouseButtons(QtCore.Qt.MouseButton.NoButton)
+            self.setAcceptHoverEvents(False)
 
-    def verifiedHoverMoveEvent(self, event: QGraphicsSceneHoverEvent) -> None:
-        super().hoverMoveEvent(event)
+    def verifyQtHoverEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> bool:
+        if self._useComplexHoverCollision:
+            return (self._alphaMask.pixelColor(event.pos().x(), event.pos().y()).red() < 1)
+        else:
+            return True
 
-    def verifiedHoverEnterEvent(self, event: QGraphicsSceneHoverEvent) -> None:
-        super().hoverEnterEvent(event)
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
+    def verifiedHoverMoveEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
+        pass
+
+    def verifiedHoverEnterEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
+        self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
 
     def verifiedHoverLeaveEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
-        super().hoverLeaveEvent(event)
-        self.setCursor(Qt.CursorShape.OpenHandCursor)
+        pass 
 
     def verifiedMousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        if self.command:
-            self.commandInterpreter.Run(self.command)
+        super().mousePressEvent(event)
 
-        self.update()
+    def verifiedMouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
+        super().mouseReleaseEvent(event)
 
-    def verifiedMouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent):
-        self.update()
     # endregion
 
-    # region Overridden QT mouse events
-    @override
-    def hoverMoveEvent(self, event: QGraphicsSceneHoverEvent) -> None:
-        if self.verifyHover(event.pos().x(), event.pos().y()):
+    # region We'll fire you if you override these methods.
+    def hoverMoveEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
+        if self.verifyQtHoverEvent(event):
             self.verifiedHoverMoveEvent(event)
-
-            if self.hovering == False:
-                self.hovering = True
+            if not self._hovering:
+                self.__hovering = True
                 self.verifiedHoverEnterEvent(event)
         else:
-            if self.hovering == True:
-                self.hovering = False
+            if self._hovering:
+                self._hovering = False
                 self.verifiedHoverLeaveEvent(event)
 
-            return
-
-    @override
     def hoverEnterEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
-        if self.verifyHover(event.pos().x(), event.pos().y()):
-            if self.hovering == False:
-                self.hovering = True
+        if self.verifyQtHoverEvent(event):
+            if not self._hovering:
+                self._hovering = True
                 self.verifiedHoverEnterEvent(event)
 
-    @override
     def hoverLeaveEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
-        if self.hovering == True:
-            self.hovering = False
+        if self._hovering:
+            self._hovering = False
             self.verifiedHoverLeaveEvent(event)
 
-    @override
     def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        if self.verifyHover(event.pos().x(), event.pos().y()):
-            self.clicking = True
+        if self._hovering:
+            self._clicking = True
+            event.setAccepted(True)
             self.verifiedMousePressEvent(event)
         else:
-            super().mousePressEvent(event)
+            raise NotImplementedError
 
-    @override
-    def mouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent):
-        if self.verifyHover(event.pos().x(), event.pos().y()):
-            self.clicking = False
+    def mouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
+        if self._clicking:
+            self._clicking = False
             self.verifiedMouseReleaseEvent(event)
         else:
-            super().mouseReleaseEvent(event)
+            raise NotImplementedError
     # endregion
 
-    # region Helpers
-    def verifyHover(self, cursorX: int, cursorY: int) -> bool:
-        # the default cursor hovering logic does not include transparency, this function is used to verify the correct hovering state.
-        return (self.alphaMask.pixelColor(cursorX, cursorY).red() < 1)
-    # endregion
 
-class InariQGraphicsScene(QGraphicsScene):
-    def __init__(self, parentItem:QtWidgets.QGraphicsItem) -> None:
+class InariBackdropItem(QtWidgets.QGraphicsRectItem):
+    def __init__(self, x: float, y: float, w: float, h: float, parent: typing.Optional[QtWidgets.QGraphicsItem]) -> None:
+        super().__init__(x, y, w, h, parent=parent)
+
+
+class InariQGraphicsScene(QtWidgets.QGraphicsScene):
+    def __init__(self, parentItem: QtWidgets.QGraphicsItem) -> None:
         super().__init__(parentItem)
+        QtCore.QObject.connect(self, QtCore.SIGNAL("selectionChanged()"), self.selectionChangedSignal)
 
-class InariQGraphicsView(QGraphicsView):
-    def __init__(self, scene: QGraphicsScene, parent: QWidget = None):
+    def selectionChangedSignal(self):
+        pass # Update in Maya
+
+class InariQGraphicsView(QtWidgets.QGraphicsView):
+    def __init__(self, scene: QtWidgets.QGraphicsScene, parent: QtWidgets.QWidget = None):
         super().__init__(scene, parent)
 
-        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-        self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setDragMode(QGraphicsView.ScrollHandDrag)
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setGeometry(0, 0, 300, 300)
-        self.setBackgroundBrush(QColor(45, 45, 45))
-        self.setFrameShape(QFrame.NoFrame)
+        self.setBackgroundBrush(QtGui.QColor(45, 45, 45))
+        self.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.setDragMode(QtWidgets.QGraphicsView.DragMode.RubberBandDrag)
 
-    @override
-    def wheelEvent(self, event: QWheelEvent):
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        super().keyPressEvent(event)
+
+        if bool(QtWidgets.QApplication.queryKeyboardModifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
+            self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
+
+    def keyReleaseEvent(self, event: QtGui.QKeyEvent) -> None:
+        super().keyReleaseEvent(event)
+
+        if not bool(QtWidgets.QApplication.queryKeyboardModifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
+            self.setDragMode(QtWidgets.QGraphicsView.DragMode.RubberBandDrag)
+
+        
+
+    # Overridden from QtWidgets.QGraphicsView
+    def wheelEvent(self, event: QtGui.QWheelEvent):
         if event.delta() > 0:
             self.scale(1.05, 1.05)
         else:
             self.scale(0.95, 0.95)
 
-class InariWidget(QWidget):
-    def __init__(self, parent: QObject, commandInterpreter:InariCommandInterpreter):
+
+class InariWidget(QtWidgets.QWidget):
+    def __init__(self, parent: QtCore.QObject):
         super().__init__(parent)
 
         self.setStyleSheet("background-color: black")
-        self.commandInterpreter = commandInterpreter
 
         self.scene = InariQGraphicsScene(self)
         self.view = InariQGraphicsView(self.scene, self)
         self.view.show()
 
-        layout = QHBoxLayout()
+        layout = QtWidgets.QHBoxLayout()
         layout.setMargin(0)
         layout.addWidget(self.view)
         self.setLayout(layout)
-    
+
     def Load(self, filepath):
         with open(filepath, "r") as file:
             obj = json.loads(file.read())
@@ -200,7 +201,7 @@ class InariWidget(QWidget):
                 item = None
                 if "imagePath" in element:
                     print(" - imagePath: " + str(element["imagePath"]))
-                    item = InariGraphicsSvgItem(element["imagePath"])
+                    item = InariGraphicsSvgItem(element["imagePath"], self)
                 else:
                     print("[ERROR] All elements need an \"imagePath\".")
                     return
@@ -221,29 +222,35 @@ class InariWidget(QWidget):
                         item.setX(item.x() + item.boundingRect().width())
                         item.setTransform(transform)
 
-                if "command" in element:
-                    print(" - command: " + str(element["command"]))
-                    item.setOnClickCommand(element["command"])
-
-                item.setCommandInterpreter(self.commandInterpreter)
-
                 self.scene.addItem(item)
 
-            # calculate scene size and set the starting position
-            # for some reason the y axis goes from - to +; thanks QT Group that totally didn't cost me like 20 minutes of confusion?..
-            sceneSizePadding = 512
-            itemsBoundingRect = self.scene.itemsBoundingRect()
-            itemsBoundingRect.setTop(itemsBoundingRect.top() - sceneSizePadding)
-            itemsBoundingRect.setBottom(itemsBoundingRect.bottom() + sceneSizePadding)
-            itemsBoundingRect.setLeft(itemsBoundingRect.left() - sceneSizePadding)
-            itemsBoundingRect.setRight(itemsBoundingRect.right() + sceneSizePadding)
-            self.scene.setSceneRect(itemsBoundingRect)
-            self.scene.addRect(itemsBoundingRect)
-            
             # TODO: set the starting position, unhiding and monitoring the scrollbars might be a good starting point
             self.view.horizontalScrollBar().setRange(0, 1)
             self.view.horizontalScrollBar().setValue(0.5)
 
-class InariCommandInterpreter():
+
+class Window(QtWidgets.QWidget):
     def __init__(self):
-        
+        super().__init__()
+
+        self.setWindowTitle("Khaos System | Inari")
+        self.setGeometry(300, 50, 766, 980)
+        self.setWindowIcon(QtGui.QIcon("icon.png"))
+
+        inariWidget = InariWidget(self)
+        inariWidget.Load("./example.json")
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.setMargin(0)
+        layout.addWidget(inariWidget)
+        self.setLayout(layout)
+
+        self.show()
+
+
+if __name__ == "__main__":
+    myApp = QtWidgets.QApplication(sys.argv)
+    window = Window()
+
+myApp.exec_()
+sys.exit(0)
