@@ -6,8 +6,6 @@ import sys
 import time
 
 # TODO: When alt is down, don't send mouse events to items.
-# TODO: Fix bug with mirrored items don't produce correct F action.
-# TODO: Infinite canvas, set canvas size and adjust starting position.
 
 class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
     _useComplexHoverCollision: bool = False
@@ -95,6 +93,14 @@ class InariQGraphicsScene(QtWidgets.QGraphicsScene):
     def selectionChangedSignal(self) -> None:
         pass  # Update in Maya
 
+    def selectionItemsBoundingRect(self):
+        # Does not take untransformable items into account.
+        boundingRect = QtCore.QRectF()
+        items = self.selectedItems()
+        for item in items:
+            boundingRect |= item.sceneBoundingRect()
+        return boundingRect
+
     def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
         print(event.scenePos())
         super().mousePressEvent(event)
@@ -117,19 +123,11 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
         super().keyPressEvent(event)
 
         if event.key() == QtCore.Qt.Key_F:
-            # Fix bug with scaled items.
-            selectionBounds = QtCore.QRectF(0, 0, 0, 0)
             if len(self.scene().selectedItems()) > 0:
-                for item in self.scene().selectedItems():
-                    print(selectionBounds)
-                    selectionBounds.setX(min(selectionBounds.x(), item.pos().x()))
-                    selectionBounds.setY(max(selectionBounds.y(), item.pos().y()))
-                    print(selectionBounds)
-                    selectionBounds.setWidth(max(selectionBounds.width(), item.boundingRect().width()))
-                    selectionBounds.setHeight(max(selectionBounds.height(), item.boundingRect().height()))
-                selectionBounds = selectionBounds.marginsAdded(QtCore.QMarginsF(64, 64, 64, 64))
+                selectionBounds = self.scene().selectionItemsBoundingRect()
             else:
-                selectionBounds = self.scene().itemsBoundingRect().marginsAdded(QtCore.QMarginsF(64, 64, 64, 64))
+                selectionBounds = self.scene().itemsBoundingRect()
+            selectionBounds = selectionBounds.marginsAdded(QtCore.QMarginsF(64, 64, 64, 64))
             self.fitInView(selectionBounds, QtCore.Qt.KeepAspectRatio)
 
 
