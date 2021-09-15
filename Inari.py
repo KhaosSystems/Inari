@@ -3,6 +3,7 @@ from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
 import typing
 import json
 import sys
+import time
 
 # TODO: When alt is down, don't send mouse events to items.
 # TODO: Fix bug with mirrored items don't produce correct F action.
@@ -87,6 +88,10 @@ class InariQGraphicsScene(QtWidgets.QGraphicsScene):
         super().__init__(parentItem)
         QtCore.QObject.connect(self, QtCore.SIGNAL("selectionChanged()"), self.selectionChangedSignal)
 
+    def addItem(self, item: QtWidgets.QGraphicsItem) -> None:
+        super().addItem(item)
+        self.setSceneRect(self.itemsBoundingRect().marginsAdded(QtCore.QMarginsF(1024*128, 1024*128, 1024*128, 1024*128)))
+
     def selectionChangedSignal(self) -> None:
         pass  # Update in Maya
 
@@ -114,17 +119,19 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
         if event.key() == QtCore.Qt.Key_F:
             # Fix bug with scaled items.
             selectionBounds = QtCore.QRectF(0, 0, 0, 0)
-            for item in self.scene().selectedItems():
-                selectionBounds.setX(min(selectionBounds.x(), item.pos().x()))
-                selectionBounds.setY(max(selectionBounds.y(), item.pos().y()))
-                selectionBounds.setSize(QtCore.QSizeF(0, 0))
-                selectionBounds.setWidth(
-                    max(selectionBounds.width(), item.boundingRect().width()))
-                selectionBounds.setHeight(
-                    max(selectionBounds.height(), item.boundingRect().height()))
-            selectionBounds = selectionBounds.marginsAdded(
-                QtCore.QMarginsF(64, 64, 64, 64))
+            if len(self.scene().selectedItems()) > 0:
+                for item in self.scene().selectedItems():
+                    print(selectionBounds)
+                    selectionBounds.setX(min(selectionBounds.x(), item.pos().x()))
+                    selectionBounds.setY(max(selectionBounds.y(), item.pos().y()))
+                    print(selectionBounds)
+                    selectionBounds.setWidth(max(selectionBounds.width(), item.boundingRect().width()))
+                    selectionBounds.setHeight(max(selectionBounds.height(), item.boundingRect().height()))
+                selectionBounds = selectionBounds.marginsAdded(QtCore.QMarginsF(64, 64, 64, 64))
+            else:
+                selectionBounds = self.scene().itemsBoundingRect().marginsAdded(QtCore.QMarginsF(64, 64, 64, 64))
             self.fitInView(selectionBounds, QtCore.Qt.KeepAspectRatio)
+
 
         # Handle KeyboardModifiers
         if bool(QtWidgets.QApplication.queryKeyboardModifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
@@ -204,10 +211,7 @@ class InariWidget(QtWidgets.QWidget):
                     item.setAcceptHoverEvents(False)
 
                 self.scene.addItem(item)
-
-            # TODO: set the starting position, unhiding and monitoring the scrollbars might be a good starting point
-            self.view.horizontalScrollBar().setRange(0, 1)
-            self.view.horizontalScrollBar().setValue(0.5)
+       
 
 
 class Window(QtWidgets.QWidget):
