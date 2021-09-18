@@ -6,12 +6,20 @@ import sys
 import time
 
 # TODO: When alt is down, don't send mouse events to items.
+# TODO: Set propper stating position
+
 
 class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
     _useComplexHoverCollision: bool = False
     _isUnderMouse: bool = False
     _isClicking: bool = False
     _alphaMask: QtGui.QImage = QtGui.QImage()
+
+    """def sceneEvent(self, event: QtCore.QEvent) -> bool:
+        if self.scene.isMoveing
+            event.ignore()
+        else:
+            super().sceneEvent(event)"""
 
     def __init__(self, fileName: str, parentItem: typing.Optional[QtWidgets.QGraphicsItem] = ...) -> None:
         super().__init__(fileName)
@@ -20,11 +28,9 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
         # self.setAcceptedMouseButtons(QtCore.Qt.MouseButton.AllButtons)
         # self.setAcceptHoverEvents(True)
 
-    # Overridden from QtSvg.QGraphicsSvgItem
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: QtWidgets.QWidget = None) -> None:
-        # Render a QPixmap from the SVG.
-        pixmap = QtGui.QPixmap(painter.device().width(),
-                               painter.device().height())
+        # Render SVG to pixmap.
+        pixmap = QtGui.QPixmap(painter.device().width(), painter.device().height())
         pixmap.fill(QtCore.Qt.transparent)
         pixmapPainter = QtGui.QPainter()
         pixmapPainter.begin(pixmap)
@@ -33,7 +39,7 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
         self.renderer().render(pixmapPainter)
         pixmapPainter.end()
 
-        # Render self.alphaMask; used by self.verifyHover() and mask for the hover effect.
+        # Render self.alphaMask used to verify hover events against transparency.
         # One possible optimization to the hover verification process would be to downsize this mask to a lower resolution.
         self._alphaMask = pixmap.toImage().createAlphaMask(QtCore.Qt.ImageConversionFlag.AutoColor)
 
@@ -75,16 +81,21 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
         self._isUnderMouse = False
 
 
-class InariBackdropItem(QtWidgets.QGraphicsRectItem):
-    def __init__(self, x: float, y: float, w: float, h: float, parent: typing.Optional[QtWidgets.QGraphicsItem]) -> None:
-        super().__init__(x, y, w, h, parent=parent)
-        self.transform
-
-
 class InariQGraphicsScene(QtWidgets.QGraphicsScene):
+    _shouldPropagateEventsToItems:bool = True
+
     def __init__(self, parentItem: QtWidgets.QGraphicsItem) -> None:
         super().__init__(parentItem)
         QtCore.QObject.connect(self, QtCore.SIGNAL("selectionChanged()"), self.selectionChangedSignal)
+
+    def SetShouldPropagateEventsToItems(self, shouldPropagateEventsToItems:bool) -> None:
+        self._shouldPropagateEventsToItems = shouldPropagateEventsToItems
+
+    def event(self, event: QtCore.QEvent) -> bool:
+        if self._shouldPropagateEventsToItems:
+            super().event(event)
+        else:
+            return True
 
     def addItem(self, item: QtWidgets.QGraphicsItem) -> None:
         super().addItem(item)
@@ -100,10 +111,6 @@ class InariQGraphicsScene(QtWidgets.QGraphicsScene):
         for item in items:
             boundingRect |= item.sceneBoundingRect()
         return boundingRect
-
-    def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        print(event.scenePos())
-        super().mousePressEvent(event)
 
 
 class InariQGraphicsView(QtWidgets.QGraphicsView):
@@ -130,9 +137,9 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
             selectionBounds = selectionBounds.marginsAdded(QtCore.QMarginsF(64, 64, 64, 64))
             self.fitInView(selectionBounds, QtCore.Qt.KeepAspectRatio)
 
-
         # Handle KeyboardModifiers
         if bool(QtWidgets.QApplication.queryKeyboardModifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
+            self.scene().SetShouldPropagateEventsToItems(False)
             self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
 
     def keyReleaseEvent(self, event: QtGui.QKeyEvent) -> None:
@@ -140,7 +147,9 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
 
         # Handle KeyboardModifiers
         if not bool(QtWidgets.QApplication.queryKeyboardModifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
+            self.scene().SetShouldPropagateEventsToItems(True)
             self.setDragMode(QtWidgets.QGraphicsView.DragMode.RubberBandDrag)
+
 
     # Overridden from QtWidgets.QGraphicsView
     def wheelEvent(self, event: QtGui.QWheelEvent):
@@ -153,8 +162,6 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
 class InariWidget(QtWidgets.QWidget):
     def __init__(self, parent: QtCore.QObject):
         super().__init__(parent)
-
-        self.setStyleSheet("background-color: black")
 
         self.scene = InariQGraphicsScene(self)
         self.view = InariQGraphicsView(self.scene, self)
@@ -209,7 +216,7 @@ class InariWidget(QtWidgets.QWidget):
                     item.setAcceptHoverEvents(False)
 
                 self.scene.addItem(item)
-       
+        
 
 
 class Window(QtWidgets.QWidget):
