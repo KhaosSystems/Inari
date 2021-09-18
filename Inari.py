@@ -4,10 +4,10 @@ import typing
 import json
 import sys
 import time
+import math
+import numpy as np  
 
-# TODO: When alt is down, don't send mouse events to items.
 # TODO: Set propper stating position
-
 
 class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
     _useComplexHoverCollision: bool = False
@@ -82,13 +82,13 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
 
 
 class InariQGraphicsScene(QtWidgets.QGraphicsScene):
-    _shouldPropagateEventsToItems:bool = True
+    _shouldPropagateEventsToItems: bool = True
 
     def __init__(self, parentItem: QtWidgets.QGraphicsItem) -> None:
         super().__init__(parentItem)
         QtCore.QObject.connect(self, QtCore.SIGNAL("selectionChanged()"), self.selectionChangedSignal)
 
-    def SetShouldPropagateEventsToItems(self, shouldPropagateEventsToItems:bool) -> None:
+    def SetShouldPropagateEventsToItems(self, shouldPropagateEventsToItems: bool) -> None:
         self._shouldPropagateEventsToItems = shouldPropagateEventsToItems
 
     def event(self, event: QtCore.QEvent) -> bool:
@@ -114,11 +114,13 @@ class InariQGraphicsScene(QtWidgets.QGraphicsScene):
 
 
 class InariQGraphicsView(QtWidgets.QGraphicsView):
+    _lastMoveEventPosition:QtCore.QPoint = None
+
     def __init__(self, scene: QtWidgets.QGraphicsScene, parent: QtWidgets.QWidget = None):
         super().__init__(scene, parent)
 
         self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
-        self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setGeometry(0, 0, 300, 300)
@@ -140,7 +142,7 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
         # Handle KeyboardModifiers
         if bool(QtWidgets.QApplication.queryKeyboardModifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
             self.scene().SetShouldPropagateEventsToItems(False)
-            self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
+            self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
 
     def keyReleaseEvent(self, event: QtGui.QKeyEvent) -> None:
         super().keyReleaseEvent(event)
@@ -150,13 +152,53 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
             self.scene().SetShouldPropagateEventsToItems(True)
             self.setDragMode(QtWidgets.QGraphicsView.DragMode.RubberBandDrag)
 
+    def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
+        # Camera panning and zooming
+        if self._lastMoveEventPosition == None:
+            self._lastMoveEventPosition = event.pos()
+        if bool(QtWidgets.QApplication.queryKeyboardModifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
+            if bool((event.buttons() & QtCore.Qt.MiddleButton) or (event.buttons() & QtCore.Qt.LeftButton)):
+                verticalScrollBar = self.verticalScrollBar()
+                horizontalScrollBar = self.horizontalScrollBar()
+                delta = event.pos() - self._lastMoveEventPosition
+                verticalScrollBar.setValue(verticalScrollBar.value() - delta.y())
+                horizontalScrollBar.setValue(horizontalScrollBar.value() - delta.x())
+            elif bool(event.buttons() & QtCore.Qt.RightButton):
+                # TODO: Use the starting mouse position as zoom anchor, this requires some manual math the correct the possition
+                # Current implementation is quite shitty... Also, the zoom need to be distance based; not an if/else statement.
+                """self.setTransformationAnchor(QtWidgets.QGraphicsView.NoAnchor)
+                widgetCenter = self.size() / 2
+                p0 = [event.pos().x()-widgetCenter.width(), event.pos().y()-widgetCenter.height()]
+                p1 = [self._lastPressEventPosition.x()-widgetCenter.width(), self._lastPressEventPosition.x()-widgetCenter.height()]
+                p2 = [p1[0]+1, p1[1]-1]
+                a = (p1[0]-p2[0])**2 + (p1[1]-p2[1])**2
+                b = (p1[0]-p0[0])**2 + (p1[1]-p0[1])**2
+                c = (p2[0]-p0[0])**2 + (p2[1]-p0[1])**2
+                angle = math.acos((a+b-c) / math.sqrt(4*a*b))
+                zoomFactor = 1.005
+                if bool(angle < math.pi/2) > 0:
+                    self.scale(1 / zoomFactor, 1 / zoomFactor)
+                else:
+                    self.scale(zoomFactor, zoomFactor)"""
+                self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
+                zoomFactor = 1.01
+                delta = event.pos()-self._lastMoveEventPosition
+                if delta.x() >= delta.y():
+                    self.scale(1 / zoomFactor, 1 / zoomFactor)
+                else:
+                    self.scale(zoomFactor, zoomFactor)
+        self._lastMoveEventPosition = event.pos()
 
-    # Overridden from QtWidgets.QGraphicsView
+        super().mouseMoveEvent(event)
+
     def wheelEvent(self, event: QtGui.QWheelEvent):
-        if event.delta() > 0:
-            self.scale(1.05, 1.05)
+        # Mouse wheel zooming
+        zoomFactor = 1.05
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        if event.angleDelta().y() > 0:
+            self.scale(zoomFactor, zoomFactor)
         else:
-            self.scale(0.95, 0.95)
+            self.scale(1 / zoomFactor, 1 / zoomFactor)
 
 
 class InariWidget(QtWidgets.QWidget):
@@ -216,7 +258,6 @@ class InariWidget(QtWidgets.QWidget):
                     item.setAcceptHoverEvents(False)
 
                 self.scene.addItem(item)
-        
 
 
 class Window(QtWidgets.QWidget):
