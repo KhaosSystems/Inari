@@ -8,6 +8,7 @@ import math
 import numpy as np  
 
 # TODO: Set propper stating position
+# Alt mouse wheel always zoom out
 
 class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
     _useComplexHoverCollision: bool = False
@@ -115,6 +116,10 @@ class InariQGraphicsScene(QtWidgets.QGraphicsScene):
 
 class InariQGraphicsView(QtWidgets.QGraphicsView):
     _lastMoveEventPosition:QtCore.QPoint = None
+    _lastRightMousePressPosition:QtCore.QPoint = None
+    _initialRightMousePressVerticalScalingFactor:float = None
+    _initialRightMousePressHorizontalScalingFactor:float = None
+
 
     def __init__(self, scene: QtWidgets.QGraphicsScene, parent: QtWidgets.QWidget = None):
         super().__init__(scene, parent)
@@ -152,10 +157,21 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
             self.scene().SetShouldPropagateEventsToItems(True)
             self.setDragMode(QtWidgets.QGraphicsView.DragMode.RubberBandDrag)
 
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        if event.button() == QtCore.Qt.RightButton:
+            self._lastRightMousePressPosition = event.pos()
+            self._initialRightMousePressHorizontalScalingFactor = self.matrix().m11()
+            self._initialRightMousePressVerticalScalingFactor = self.matrix().m22()
+
+        self._lastLeftMouseZoomFactor = 1
+        super().mousePressEvent(event)
+
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         # Camera panning and zooming
         if self._lastMoveEventPosition == None:
             self._lastMoveEventPosition = event.pos()
+        if self._lastRightMousePressPosition == None:
+            self._lastRightMousePressPosition = event.pos()
         if bool(QtWidgets.QApplication.queryKeyboardModifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
             if bool((event.buttons() & QtCore.Qt.MiddleButton) or (event.buttons() & QtCore.Qt.LeftButton)):
                 verticalScrollBar = self.verticalScrollBar()
@@ -164,34 +180,97 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
                 verticalScrollBar.setValue(verticalScrollBar.value() - delta.y())
                 horizontalScrollBar.setValue(horizontalScrollBar.value() - delta.x())
             elif bool(event.buttons() & QtCore.Qt.RightButton):
+                self.setTransformationAnchor(QtWidgets.QGraphicsView.NoAnchor)
+                """scaleFactor = 0.9999;
+                originPoint = np.array((self._lastPressEventPosition.x(), self._lastPressEventPosition.y()))
+                cursorPosition = np.array((event.pos().x(), event.pos().y()))
+                viewportOffset = np.multiply(originPoint, scaleFactor)
+                newViewportCenter = np.add(viewportOffset, cursorPosition)
+                self.scale(scaleFactor, scaleFactor)
+                self.centerOn(newViewportCenter[0], newViewportCenter[1])"""
                 # TODO: Use the starting mouse position as zoom anchor, this requires some manual math the correct the possition
                 # Current implementation is quite shitty... Also, the zoom need to be distance based; not an if/else statement.
+                """cursorPosition = np.array((event.pos().x(), event.pos().y()))
+                originPoint = np.array((self._lastPressEventPosition.x(), self._lastPressEventPosition.y()))
+                offsetOriginPoint = originPoint + np.array((-1, 1))
+                distance = np.linalg.norm(cursorPosition - originPoint)
+                ba = cursorPosition - originPoint
+                bc = offsetOriginPoint - originPoint
+                cosineAngle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+                angle = np.arccos(cosineAngle)
+                zoomFactor = distance if bool(angle >= math.pi/2) else -distance
+                print(zoomFactor)
+                self._currentLeftMouseButtonZoom += zoomFactor/10000"""
+                
+                #print("test: " + str(zoomFactor/10000))
+                #print(self._currentLeftMouseButtonZoom)
+                #self.scale(zoomFactor, zoomFactor)
+                # Custom transformation anchor
+                """transformationDiff:QtCore.QPoint = self.mapToScene(self.viewport().rect().center()) 
+                transformationDiff -= self.mapToScene(self.viewport().mapFromGlobal(QtGui.QCursor.pos()))
+                transformationDiff.setX(transformationDiff.x() * zoomFactor)
+                transformationDiff.setY(transformationDiff.y() * zoomFactor)
+                print(transformationDiff)
+                self.scene().addRect(cursorPosition[0] + transformationDiff.x(), cursorPosition[1] + transformationDiff.y(), 10, 10)
+                self.centerOn(cursorPosition[0] + transformationDiff.x(), cursorPosition[1] + transformationDiff.y())"""
                 """self.setTransformationAnchor(QtWidgets.QGraphicsView.NoAnchor)
-                widgetCenter = self.size() / 2
-                p0 = [event.pos().x()-widgetCenter.width(), event.pos().y()-widgetCenter.height()]
-                p1 = [self._lastPressEventPosition.x()-widgetCenter.width(), self._lastPressEventPosition.x()-widgetCenter.height()]
-                p2 = [p1[0]+1, p1[1]-1]
-                a = (p1[0]-p2[0])**2 + (p1[1]-p2[1])**2
-                b = (p1[0]-p0[0])**2 + (p1[1]-p0[1])**2
-                c = (p2[0]-p0[0])**2 + (p2[1]-p0[1])**2
-                angle = math.acos((a+b-c) / math.sqrt(4*a*b))
-                zoomFactor = 1.005
-                if bool(angle < math.pi/2) > 0:
-                    self.scale(1 / zoomFactor, 1 / zoomFactor)
+
+                zoomInFactor = 1.25;
+                zoomOutFactor = 1 / zoomInFactor;
+
+                oldPos = self.mapToScene(event.pos());
+
+                zoomFactor = zoomInFactor;
+                if event.angleDelta().y() > 0:
+                    zoomFactor = zoomInFactor
                 else:
-                    self.scale(zoomFactor, zoomFactor)"""
-                self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
-                zoomFactor = 1.01
-                delta = event.pos()-self._lastMoveEventPosition
-                if delta.x() >= delta.y():
-                    self.scale(1 / zoomFactor, 1 / zoomFactor)
-                else:
-                    self.scale(zoomFactor, zoomFactor)
+                    zoomFactor = zoomOutFactor
+                self.scale(zoomFactor, zoomFactor)
+
+                newPos = self.mapToScene(event.pos())
+
+                delta = newPos - oldPos;
+                self.translate(delta.x(), delta.y())"""
+                self.setTransformationAnchor(QtWidgets.QGraphicsView.NoAnchor)
+                oldSceneSpaceOriginPoint = self.mapToScene(self._lastRightMousePressPosition)
+
+                cursorPoint = np.array((event.pos().x(), event.pos().y()))
+                originPoint = np.array((self._lastRightMousePressPosition.x(), self._lastRightMousePressPosition.y()))
+                orientationPoint = np.add(originPoint, np.array((1, 1)))
+                orientationVector = np.subtract(orientationPoint, originPoint)
+                cursorVector = np.subtract(orientationPoint, cursorPoint)
+                orientationUnitVector = orientationVector/np.linalg.norm(orientationVector)
+                cursorUnitVector = cursorVector/np.linalg.norm(cursorVector)
+                dotProduct = np.dot(orientationUnitVector, cursorUnitVector)
+                distance = np.linalg.norm(cursorPoint - originPoint)
+                zoomSensitivity = 0.01
+                globalScaleFactor = 1 - (dotProduct * distance * zoomSensitivity)
+                
+                self.scale(globalScaleFactor, globalScaleFactor)
+
+                matrix = self.matrix()
+                horizontalScalingFactor = self._initialRightMousePressHorizontalScalingFactor * globalScaleFactor
+                verticalScalingFactor = self._initialRightMousePressVerticalScalingFactor * globalScaleFactor
+                m12 = matrix.m12()
+                m21 = matrix.m21()
+                dx = matrix.dx()
+                dy = matrix.dy()
+
+                self.setMatrix(QtGui.QMatrix(horizontalScalingFactor, m12, m21, verticalScalingFactor, dx, dy))
+                              
+                newSceneSpaceOriginPoint = self.mapToScene(self._lastRightMousePressPosition)
+                translationDelta = newSceneSpaceOriginPoint - oldSceneSpaceOriginPoint;
+                self.translate(translationDelta.x(), translationDelta.y())
+                #print(globalScaleFactor)
+                #self._lastLeftMouseZoomFactor = globalScaleFactor
+
+                pass
         self._lastMoveEventPosition = event.pos()
 
         super().mouseMoveEvent(event)
 
     def wheelEvent(self, event: QtGui.QWheelEvent):
+        event.accept()
         # Mouse wheel zooming
         zoomFactor = 1.05
         self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
@@ -199,7 +278,7 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
             self.scale(zoomFactor, zoomFactor)
         else:
             self.scale(1 / zoomFactor, 1 / zoomFactor)
-
+        
 
 class InariWidget(QtWidgets.QWidget):
     def __init__(self, parent: QtCore.QObject):
