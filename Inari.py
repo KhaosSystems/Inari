@@ -120,7 +120,9 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
     _initialRightMousePressVerticalScalingFactor:float = None
     _initialRightMousePressHorizontalScalingFactor:float = None
 
-
+    _maxScaleFactor:float = 1.5
+    _minScaleFactor:float = 10
+    
     def __init__(self, scene: QtWidgets.QGraphicsScene, parent: QtWidgets.QWidget = None):
         super().__init__(scene, parent)
 
@@ -198,10 +200,14 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
                 cursorUnitVector = cursorVector/np.linalg.norm(cursorVector) # Normalization calulation
                 dotProduct = np.dot(orientationUnitVector, cursorUnitVector)
                 distanceToOrigin = np.linalg.norm(cursorPoint - originPoint)
-                globalScaleFactor = 1 - (dotProduct * distanceToOrigin * 0.01) # dot * dist * zoomSensitivity
+                globalScaleFactor = 1 - (dotProduct * distanceToOrigin * 0.0015) # dot * dist * zoomSensitivity
                 ### Create the actial matrix for applying the scale; the initial scaleing factors should be set on mouse putton pressed.
-                horizontalScalingFactor = self._initialRightMousePressHorizontalScalingFactor * globalScaleFactor # FIXME: This should possibly not by multiplying since it wont be linear; i think...
-                verticalScalingFactor = self._initialRightMousePressVerticalScalingFactor * globalScaleFactor # FIXME: If addition or subtraction is the correct way to go, the globalScaleFactor range need to change.
+                finalHorizontalScalingFactor = min(max(self._initialRightMousePressHorizontalScalingFactor * globalScaleFactor, 0.2), 2)
+                finalVerticalScalingFactor = min(max(self._initialRightMousePressVerticalScalingFactor * globalScaleFactor, 0.2), 2)
+                # print(finalHorizontalScalingFactor)
+                # print(finalVerticalScalingFactor) 
+                horizontalScalingFactor = finalHorizontalScalingFactor # FIXME: This should possibly not by multiplying since it wont be linear; i think...
+                verticalScalingFactor = finalVerticalScalingFactor # FIXME: If addition or subtraction is the correct way to go, the globalScaleFactor range need to change.
                 verticalShearingFactor = self.matrix().m12()
                 horizontalShearingFactor = self.matrix().m21()
                 self.setMatrix(QtGui.QMatrix(horizontalScalingFactor, verticalShearingFactor, horizontalShearingFactor, verticalScalingFactor, self.matrix().dx(), self.matrix().dy()))
