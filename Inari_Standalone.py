@@ -7,7 +7,7 @@ from PySide2.QtCore import Qt, QObject, QPoint, QPointF
 from PySide2.QtSvg import QGraphicsSvgItem, QSvgRenderer
 from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
 
-class Window(QWidget):
+class Window(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
 
@@ -18,12 +18,13 @@ class Window(QWidget):
         inariWidget = InariWidget(self)
         inariWidget.Load("./example.json")
 
-        layout = QHBoxLayout()
+        layout = QtWidgets.QHBoxLayout()
         layout.setMargin(0)
         layout.addWidget(inariWidget)
         self.setLayout(layout)
 
         self.show()
+
 
 if __name__ == "__main__":
     myApp = QtWidgets.QApplication(sys.argv)
@@ -31,3 +32,4 @@ if __name__ == "__main__":
 
 myApp.exec_()
 sys.exit(0)
+

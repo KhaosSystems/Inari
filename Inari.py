@@ -2,10 +2,6 @@ from os import terminal_size
 from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
 import typing
 import json
-import sys
-import time
-import math
-import numpy as np  
 
 # TODO: Set propper stating position
 # Alt mouse wheel always zoom out
@@ -82,6 +78,12 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
         self._isUnderMouse = False
 
 
+class InariLocator(InariGraphicsSvgItem):
+    def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
+        super().mousePressEvent(event)
+        print("test")
+
+
 class InariQGraphicsScene(QtWidgets.QGraphicsScene):
     _shouldPropagateEventsToItems: bool = True
 
@@ -119,9 +121,6 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
     _lastRightMousePressPosition:QtCore.QPoint = None
     _initialRightMousePressVerticalScalingFactor:float = None
     _initialRightMousePressHorizontalScalingFactor:float = None
-
-    _maxScaleFactor:float = 1.5
-    _minScaleFactor:float = 10
     
     def __init__(self, scene: QtWidgets.QGraphicsScene, parent: QtWidgets.QWidget = None):
         super().__init__(scene, parent)
@@ -187,19 +186,19 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
                 # Capture data for correcting view translation offset.
                 oldSceneSpaceOriginPoint = self.mapToScene(self._lastRightMousePressPosition)
                 ### Calculate scaleing factor
-                cursorPoint = np.array((event.pos().x(), event.pos().y()))
-                originPoint = np.array((self._lastRightMousePressPosition.x(), self._lastRightMousePressPosition.y()))
-                orientationPoint = np.add(originPoint, np.array((1, 1)))
-                orientationVector = np.subtract(orientationPoint, originPoint)
-                cursorVector = np.subtract(orientationPoint, cursorPoint)
+                cursorPoint = QtGui.QVector2D(event.pos())
+                originPoint = QtGui.QVector2D(self._lastRightMousePressPosition)
+                orientationPoint = originPoint + QtGui.QVector2D(1, 1)
+                orientationVector = orientationPoint - originPoint
+                cursorVector = orientationPoint - cursorPoint
                 # Introduce a small constant value if the vector length is 0.
                 # This is needed since the vector normalization calulation will cause an error if the vector has a length of 0
-                orientationVector = np.add(orientationVector, np.array((0.001, 0.001))) if bool(np.linalg.norm(orientationVector) == 0) else orientationVector
-                cursorVector = np.add(cursorVector, np.array((0.001, 0.001))) if bool(np.linalg.norm(cursorVector) == 0) else cursorVector
-                orientationUnitVector = orientationVector/np.linalg.norm(orientationVector) # Normalization calulation
-                cursorUnitVector = cursorVector/np.linalg.norm(cursorVector) # Normalization calulation
-                dotProduct = np.dot(orientationUnitVector, cursorUnitVector)
-                distanceToOrigin = np.linalg.norm(cursorPoint - originPoint)
+                orientationVector = (orientationVector + QtGui.QVector2D(0.001, 0.001)) if bool(orientationVector.length() == 0) else orientationVector
+                cursorVector = (cursorVector + QtGui.QVector2D(0.001, 0.001)) if bool(cursorVector.length() == 0) else cursorVector
+                orientationUnitVector = orientationVector.normalized() # Normalization calulation
+                cursorUnitVector = cursorVector.normalized() # Normalization calulation
+                dotProduct = QtGui.QVector2D.dotProduct(orientationUnitVector, cursorUnitVector)
+                distanceToOrigin = originPoint.distanceToPoint(cursorPoint)
                 globalScaleFactor = 1 - (dotProduct * distanceToOrigin * 0.0015) # dot * dist * zoomSensitivity
                 ### Create the actial matrix for applying the scale; the initial scaleing factors should be set on mouse putton pressed.
                 finalHorizontalScalingFactor = min(max(self._initialRightMousePressHorizontalScalingFactor * globalScaleFactor, 0.2), 2)
@@ -253,7 +252,7 @@ class InariWidget(QtWidgets.QWidget):
                 item = None
                 if "imagePath" in element:
                     print(" - imagePath: " + str(element["imagePath"]))
-                    item = InariGraphicsSvgItem(element["imagePath"], self)
+                    item = InariLocator(element["imagePath"], self)
                 else:
                     print("[ERROR] All elements need an \"imagePath\".")
                     return
@@ -287,30 +286,3 @@ class InariWidget(QtWidgets.QWidget):
                     item.setAcceptHoverEvents(False)
 
                 self.scene.addItem(item)
-
-
-class Window(QtWidgets.QWidget):
-    def __init__(self):
-        super().__init__()
-
-        self.setWindowTitle("Khaos System | Inari")
-        self.setGeometry(300, 50, 766, 980)
-        self.setWindowIcon(QtGui.QIcon("icon.png"))
-
-        inariWidget = InariWidget(self)
-        inariWidget.Load("./example.json")
-
-        layout = QtWidgets.QHBoxLayout()
-        layout.setMargin(0)
-        layout.addWidget(inariWidget)
-        self.setLayout(layout)
-
-        self.show()
-
-
-if __name__ == "__main__":
-    myApp = QtWidgets.QApplication(sys.argv)
-    window = Window()
-
-myApp.exec_()
-sys.exit(0)
