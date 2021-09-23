@@ -1,4 +1,6 @@
 from os import terminal_size
+
+from PySide2.QtWidgets import QGraphicsItem
 from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
 import typing
 import json
@@ -6,11 +8,24 @@ import json
 # TODO: Set propper stating position
 # Alt mouse wheel always zoom out
 
+class InariCommandInterpreter():
+    def Select(self, item:str):
+        print("Select")
+
+    def Deselect(self, item:str):
+        print("Deselect")
+
+    def DeselectAll(self):
+        print("DeselectAll")
+
+
 class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
     _useComplexHoverCollision: bool = False
     _isUnderMouse: bool = False
     _isClicking: bool = False
     _alphaMask: QtGui.QImage = QtGui.QImage()
+    _commandInterpreter:InariCommandInterpreter = None 
+    _name = None
 
     """def sceneEvent(self, event: QtCore.QEvent) -> bool:
         if self.scene.isMoveing
@@ -18,12 +33,33 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
         else:
             super().sceneEvent(event)"""
 
-    def __init__(self, fileName: str, parentItem: typing.Optional[QtWidgets.QGraphicsItem] = ...) -> None:
+    def __init__(self, fileName: str, commandInterpreter:InariCommandInterpreter=None, parentItem: typing.Optional[QtWidgets.QGraphicsItem] = ...) -> None:
         super().__init__(fileName)
+
+        self._commandInterpreter = commandInterpreter
         # TODO: This is temporary set in Load, fix
         # self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
         # self.setAcceptedMouseButtons(QtCore.Qt.MouseButton.AllButtons)
         # self.setAcceptHoverEvents(True)
+
+    def setCommandInterpreter(self, commandInterpreter:InariCommandInterpreter):
+        self._commandInterpreter = commandInterpreter
+
+    def setName(self, name:str) -> str:
+        self._name = name
+
+    def name(self) -> str:
+        return self._name
+
+    def itemChange(self, change: QtWidgets.QGraphicsItem.GraphicsItemChange, value: typing.Any) -> typing.Any:
+        if change == QGraphicsItem.ItemSelectedChange:
+            if value:
+                self._commandInterpreter.Select(self._name)
+            else:
+                self._commandInterpreter.Deselect(self._name)
+
+
+        return super().itemChange(change, value)
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: QtWidgets.QWidget = None) -> None:
         # Render SVG to pixmap.
@@ -81,15 +117,18 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
 class InariLocator(InariGraphicsSvgItem):
     def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
         super().mousePressEvent(event)
-        print("test")
 
 
 class InariQGraphicsScene(QtWidgets.QGraphicsScene):
     _shouldPropagateEventsToItems: bool = True
+    _commandInterpreter:InariCommandInterpreter = None
 
     def __init__(self, parentItem: QtWidgets.QGraphicsItem) -> None:
         super().__init__(parentItem)
         QtCore.QObject.connect(self, QtCore.SIGNAL("selectionChanged()"), self.selectionChangedSignal)
+
+    def setCommandInterpreter(self, commandInterpreter:InariCommandInterpreter):
+        self._commandInterpreter = commandInterpreter
 
     def SetShouldPropagateEventsToItems(self, shouldPropagateEventsToItems: bool) -> None:
         self._shouldPropagateEventsToItems = shouldPropagateEventsToItems
@@ -105,7 +144,8 @@ class InariQGraphicsScene(QtWidgets.QGraphicsScene):
         self.setSceneRect(self.itemsBoundingRect().marginsAdded(QtCore.QMarginsF(1024*128, 1024*128, 1024*128, 1024*128)))
 
     def selectionChangedSignal(self) -> None:
-        pass  # Update in Maya
+        if(len(self.selectedItems()) == 0):
+            self._commandInterpreter.DeselectAll()
 
     def selectionItemsBoundingRect(self):
         # Does not take untransformable items into account.
@@ -121,7 +161,8 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
     _lastRightMousePressPosition:QtCore.QPoint = None
     _initialRightMousePressVerticalScalingFactor:float = None
     _initialRightMousePressHorizontalScalingFactor:float = None
-    
+    _commandInterpreter:InariCommandInterpreter = None
+
     def __init__(self, scene: QtWidgets.QGraphicsScene, parent: QtWidgets.QWidget = None):
         super().__init__(scene, parent)
 
@@ -133,6 +174,9 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
         self.setBackgroundBrush(QtGui.QColor(45, 45, 45))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.setDragMode(QtWidgets.QGraphicsView.DragMode.RubberBandDrag)
+
+    def setCommandInterpreter(self, commandInterpreter:InariCommandInterpreter):
+        self._commandInterpreter = commandInterpreter
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         super().keyPressEvent(event)
@@ -230,10 +274,15 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
         
 
 class InariWidget(QtWidgets.QWidget):
-    def __init__(self, parent: QtCore.QObject):
+    _commandInterpreter:InariCommandInterpreter = InariCommandInterpreter()
+
+    def __init__(self, parent: QtCore.QObject, commandInterpreter:InariCommandInterpreter):
         super().__init__(parent)
 
+        self._commandInterpreter = commandInterpreter
+
         self.scene = InariQGraphicsScene(self)
+        self.scene.setCommandInterpreter(self._commandInterpreter)
         self.view = InariQGraphicsView(self.scene, self)
         self.view.show()
 
@@ -252,7 +301,7 @@ class InariWidget(QtWidgets.QWidget):
                 item = None
                 if "imagePath" in element:
                     print(" - imagePath: " + str(element["imagePath"]))
-                    item = InariLocator(element["imagePath"], self)
+                    item = InariLocator("C:/Dev/Inari/" + element["imagePath"], self._commandInterpreter, self)
                 else:
                     print("[ERROR] All elements need an \"imagePath\".")
                     return
@@ -280,9 +329,10 @@ class InariWidget(QtWidgets.QWidget):
                     item.setAcceptedMouseButtons(
                         QtCore.Qt.MouseButton.AllButtons)
                     item.setAcceptHoverEvents(True)
+                    item.setName(element["command"])
                 else:
                     item.setAcceptedMouseButtons(
                         QtCore.Qt.MouseButton.NoButton)
                     item.setAcceptHoverEvents(False)
 
-                self.scene.addItem(item)
+                self.scene.addItem(item)        

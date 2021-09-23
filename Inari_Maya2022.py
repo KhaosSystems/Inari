@@ -5,11 +5,11 @@ import maya.OpenMayaUI as omui
 from shiboken2 import wrapInstance
 from PySide2 import QtGui, QtWidgets, QtCore 
 
-import sys
+import typing
+import Inari
+import importlib
 
-import sys
-sys.path.insert(0, "C:/Dev/Inari/")
-from Inari import InariWidget
+importlib.reload(Inari)
 
 def dock_window(dialog_class):
     try:
@@ -37,6 +37,15 @@ def dock_window(dialog_class):
     # will return the class of the dock content.
     return win.run()
 
+class InariMayaCommandInterpreter(Inari.InariCommandInterpreter):
+    def Select(self, item:str):
+        cmds.select(str(item), add=True)
+
+    def Deselect(self, item: str):
+        cmds.select(str(item), deselect=True)
+
+    def DeselectAll(self):
+        cmds.select(cl=True)
 
 class MyDockingUI(QtWidgets.QWidget):
 
@@ -56,12 +65,8 @@ class MyDockingUI(QtWidgets.QWidget):
         self.main_layout = parent.layout()
         self.main_layout.setContentsMargins(2, 2, 2, 2)
 
-        # here we can start coding our UI
-        #self.my_label = QtWidgets.QLabel('hello world!')
-        #self.main_layout.addWidget(self.my_label)   
-        # 
-        inariWidget = InariWidget(self)
-        inariWidget.Load("C:\Dev\Inari\example.json")
+        inariWidget = Inari.InariWidget(self, InariMayaCommandInterpreter())
+        inariWidget.Load("C:/Dev/Inari/example.json")
 
         self.main_layout.setMargin(0)
         self.main_layout.addWidget(inariWidget)

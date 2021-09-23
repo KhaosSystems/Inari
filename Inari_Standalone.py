@@ -1,5 +1,5 @@
 import sys
-from Inari import InariWidget
+from Inari import InariWidget, InariCommandInterpreter
 
 from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QStyleOptionGraphicsItem, QHBoxLayout, QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneHoverEvent, QGraphicsSceneMouseEvent, QGraphicsSceneMouseEvent, QGraphicsColorizeEffect, QGraphicsEffect, QGraphicsBlurEffect
 from PySide2.QtGui import QIcon, QPainter, QTransform, QBrush, QColor, QWheelEvent, QCursor, QImage, QPixmap, QBitmap
@@ -15,8 +15,8 @@ class Window(QtWidgets.QWidget):
         self.setGeometry(300, 50, 766, 980)
         self.setWindowIcon(QtGui.QIcon("icon.png"))
 
-        inariWidget = InariWidget(self)
-        inariWidget.Load("./example.json")
+        inariWidget = InariWidget(self, InariCommandInterpreter())
+        inariWidget.Load("C:/Dev/Inari/example.json")
 
         layout = QtWidgets.QHBoxLayout()
         layout.setMargin(0)
