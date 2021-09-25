@@ -1,7 +1,9 @@
+from os import replace
 import weakref
 
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui
+import maya.OpenMaya as om
 from shiboken2 import wrapInstance
 from PySide2 import QtGui, QtWidgets, QtCore 
 
@@ -10,6 +12,7 @@ import Inari
 import importlib
 
 importlib.reload(Inari)
+win = None
 
 def dock_window(dialog_class):
     try:
@@ -38,17 +41,22 @@ def dock_window(dialog_class):
     return win.run()
 
 class InariMayaCommandInterpreter(Inari.InariCommandInterpreter):
-    def Select(self, item:str):
+    def Host_Select(self, item:str) -> None:
         cmds.select(str(item), add=True)
 
-    def Deselect(self, item: str):
+    def Host_Deselect(self, item: str) -> None:
         cmds.select(str(item), deselect=True)
 
-    def DeselectAll(self):
-        cmds.select(cl=True)
+    def Host_SetSelection(self, items:typing.List[str]) -> None:
+        cmds.select(items, replace=True)
+
+    def Host_DeselectAll(self) -> None:
+        cmds.select(cl=True)  
+      
+    def Host_GetSelection(self) -> typing.List[str]:
+        return cmds.ls(selection=True, sn=True)
 
 class MyDockingUI(QtWidgets.QWidget):
-
     instances = list()
     CONTROL_NAME = 'my_workspcae_control'
     DOCK_LABEL_NAME = 'Khaos Systems | Inari'
@@ -65,13 +73,17 @@ class MyDockingUI(QtWidgets.QWidget):
         self.main_layout = parent.layout()
         self.main_layout.setContentsMargins(2, 2, 2, 2)
 
-        inariWidget = Inari.InariWidget(self, InariMayaCommandInterpreter())
-        inariWidget.Load("C:/Dev/Inari/example.json")
+        self.commandInterpreter = InariMayaCommandInterpreter()
+        self.inariWidget = Inari.InariWidget(self, self.commandInterpreter)
+        self.inariWidget.Load("C:/Dev/Inari/example.json")
+        self.OnSelectionChangedEvent = om.MEventMessage.addEventCallback("SelectionChanged", OnSelectionChanged)
 
         self.main_layout.setMargin(0)
-        self.main_layout.addWidget(inariWidget)
+        self.main_layout.addWidget(self.inariWidget)
         self.show()
  
+    def __del__(self):
+        om.MMessage.removeCallback(self.OnSelectionChangedEvent)
 
     @staticmethod
     def delete_instances():
@@ -89,6 +101,9 @@ class MyDockingUI(QtWidgets.QWidget):
 
     def run(self):
         return self
+
+def OnSelectionChanged(*args, **kwargs):
+    MyDockingUI.instances[0].inariWidget.SetSelection(MyDockingUI.instances[0].commandInterpreter.Host_GetSelection())
 
 # this is where we call the window
 my_dock = dock_window(MyDockingUI)

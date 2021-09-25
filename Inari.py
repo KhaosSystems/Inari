@@ -5,19 +5,26 @@ from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
 import typing
 import json
 
-# TODO: Set propper stating position
-# Alt mouse wheel always zoom out
+# TODO: Set propper stating position.
+# TODO: Alt mouse wheel always zoom out.
+# TODO: Click+dragging a locator moves it.
 
 class InariCommandInterpreter():
-    def Select(self, item:str):
-        print("Select")
+    def Host_Select(self, item:str) -> None:
+        print("Host_Select")
 
-    def Deselect(self, item:str):
-        print("Deselect")
+    def Host_SetSelection(self, items:typing.List[str]) -> None:
+        print("Host_SetSelection")
 
-    def DeselectAll(self):
-        print("DeselectAll")
+    def Host_Deselect(self, item:str) -> None:
+        print("Host_Deselect")
 
+    def Host_DeselectAll(self) -> None:
+        print("Host_DeselectAll")
+
+    def Host_GetSelection(self) -> typing.List[str]:
+        print("Host_GetSelection")
+        return []
 
 class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
     _useComplexHoverCollision: bool = False
@@ -53,10 +60,10 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
 
     def itemChange(self, change: QtWidgets.QGraphicsItem.GraphicsItemChange, value: typing.Any) -> typing.Any:
         if change == QGraphicsItem.ItemSelectedChange:
-            if value:
-                self._commandInterpreter.Select(self._name)
-            else:
-                self._commandInterpreter.Deselect(self._name)
+            if value and not self.isSelected():
+                self._commandInterpreter.Host_Select(self._name)
+            elif not value and self.isSelected():
+                self._commandInterpreter.Host_Deselect(self._name)
 
 
         return super().itemChange(change, value)
@@ -145,7 +152,7 @@ class InariQGraphicsScene(QtWidgets.QGraphicsScene):
 
     def selectionChangedSignal(self) -> None:
         if(len(self.selectedItems()) == 0):
-            self._commandInterpreter.DeselectAll()
+            self._commandInterpreter.Host_DeselectAll()
 
     def selectionItemsBoundingRect(self):
         # Does not take untransformable items into account.
@@ -290,6 +297,13 @@ class InariWidget(QtWidgets.QWidget):
         layout.setMargin(0)
         layout.addWidget(self.view)
         self.setLayout(layout)
+
+    def SetSelection(self, items:typing.List[str]) -> None:
+        self.scene.clearSelection()
+        for item in self.scene.items():
+            if isinstance(item, InariLocator):
+                if item.name() in items:
+                    item.setSelected(True)
 
     def Load(self, filepath):
         with open(filepath, "r") as file:
