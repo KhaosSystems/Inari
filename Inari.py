@@ -8,7 +8,7 @@ import json
 
 # TODO: Set propper stating position.
 # TODO: Alt mouse wheel always zoom out.
-# TODO: Click+dragging a locator moves it.
+# TODO: Load project
 
 class InariCommandInterpreter():
     def Host_SetSelection(self, items:typing.List[str]) -> None:
@@ -127,11 +127,7 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
         delta = (event.scenePos() - self._initialLeftClickPosition)
         delta.setY(delta.y() * -1)
         delta /= 100
-
         newPosition = self._initialPosition + delta
-
-        print(delta)
-
         self._commandInterpreter.Host_SetPosition(self.name(), newPosition.x(), newPosition.y(), 0, worldSpace=False, relative=False)
 
 class InariLocator(InariGraphicsSvgItem):
