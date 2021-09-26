@@ -1,4 +1,5 @@
 from os import terminal_size
+from PySide2.QtCore import QPoint
 
 from PySide2.QtWidgets import QGraphicsItem
 from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
@@ -17,6 +18,14 @@ class InariCommandInterpreter():
         print("Host_GetSelection")
         return []
 
+    def Host_SetPosition(self, item:str, x:float, y:float, z:float, worldSpace:bool=False, relative:bool=True) -> None:
+        print("Host_SetPosition")
+
+    def Host_GetPosition(self, item:str, worldSpace:bool=False, relative:bool=True) -> typing.List[float]:
+        print("Host_GetPosition")
+        return [0, 0, 0]
+
+
 class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
     _useComplexHoverCollision: bool = False
     _isUnderMouse: bool = False
@@ -24,6 +33,8 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
     _alphaMask: QtGui.QImage = QtGui.QImage()
     _commandInterpreter:InariCommandInterpreter = None 
     _name = None
+    _initialLeftClickPosition = None
+    _initialPosition:QtCore.QPoint() = None
 
     """def sceneEvent(self, event: QtCore.QEvent) -> bool:
         if self.scene.isMoveing
@@ -85,11 +96,22 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
 
     def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
         super().mousePressEvent(event)
+
+        if (event.button() == QtCore.Qt.LeftButton):
+            self.scene().registerSceneMouseMoveEventListener(self)
+            self._initialLeftClickPosition = event.scenePos()
+            pos = self._commandInterpreter.Host_GetPosition(self.name(), worldSpace=False)
+            self._initialPosition = QtCore.QPointF(pos[0], pos[1])
+
         self._isClicking = True
         self.update()
 
     def mouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
         super().mouseReleaseEvent(event)
+
+        if (event.button() == QtCore.Qt.LeftButton):
+            self.scene().unregisterSceneMouseMoveEventListener(self)
+
         self._isClicking = False
         self.update()
 
@@ -101,6 +123,16 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
         super().hoverLeaveEvent(event)
         self._isUnderMouse = False
 
+    def sceneMouseMoveEvent(self, event:QtWidgets.QGraphicsSceneMouseEvent) -> None:
+        delta = (event.scenePos() - self._initialLeftClickPosition)
+        delta.setY(delta.y() * -1)
+        delta /= 100
+
+        newPosition = self._initialPosition + delta
+
+        print(delta)
+
+        self._commandInterpreter.Host_SetPosition(self.name(), newPosition.x(), newPosition.y(), 0, worldSpace=False, relative=False)
 
 class InariLocator(InariGraphicsSvgItem):
     def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
@@ -110,13 +142,26 @@ class InariLocator(InariGraphicsSvgItem):
 class InariQGraphicsScene(QtWidgets.QGraphicsScene):
     _shouldPropagateEventsToItems: bool = True
     _commandInterpreter:InariCommandInterpreter = None
+    _sceneMouseMoveEventListeners:typing.List[InariGraphicsSvgItem] = []
 
     def __init__(self, parentItem: QtWidgets.QGraphicsItem) -> None:
         super().__init__(parentItem)
         QtCore.QObject.connect(self, QtCore.SIGNAL("selectionChanged()"), self.selectionChangedSignal)
-
+        
     def setCommandInterpreter(self, commandInterpreter:InariCommandInterpreter):
         self._commandInterpreter = commandInterpreter
+
+    def registerSceneMouseMoveEventListener(self, item: InariGraphicsSvgItem) -> None:
+        self._sceneMouseMoveEventListeners.append(item)
+
+    def unregisterSceneMouseMoveEventListener(self, item: InariGraphicsSvgItem) -> None:
+        self._sceneMouseMoveEventListeners.remove(item)
+
+    def mouseMoveEvent(self, event:QtWidgets.QGraphicsSceneMouseEvent):
+        for listener in self._sceneMouseMoveEventListeners:
+            listener.sceneMouseMoveEvent(event)
+
+        return super().mouseMoveEvent(event)
 
     def SetShouldPropagateEventsToItems(self, shouldPropagateEventsToItems: bool) -> None:
         self._shouldPropagateEventsToItems = shouldPropagateEventsToItems
@@ -133,7 +178,6 @@ class InariQGraphicsScene(QtWidgets.QGraphicsScene):
 
     def selectionChangedSignal(self) -> None:
         items = [item.name() for item in self.selectedItems() if isinstance(item, InariLocator)]
-        print(items)
         self._commandInterpreter.Host_SetSelection(items)
 
     def selectionItemsBoundingRect(self):

@@ -1,6 +1,6 @@
 //Maya ASCII 2022 scene
 //Name: example.ma
-//Last modified: Sun, Sep 26, 2021 02:36:20 PM
+//Last modified: Sun, Sep 26, 2021 05:23:19 PM
 //Codeset: 1252
 requires maya "2022";
 requires "stereoCamera" "10.0";
@@ -12,21 +12,21 @@ fileInfo "product" "Maya 2022";
 fileInfo "version" "2022";
 fileInfo "cutIdentifier" "202102181415-29bfc1879c";
 fileInfo "osv" "Windows 10 Home v2009 (Build: 19042)";
-fileInfo "UUID" "741D3425-4C1E-E61A-6E36-31AC4B1249F6";
+fileInfo "UUID" "0E145F57-40F1-E14A-2729-0AB1A64FD6F4";
 createNode transform -s -n "persp";
 	rename -uid "AF0FB4E9-44D5-B997-AAB8-3EB5662D3C37";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" 10.65220679350651 6.4846301354332496 -0.29907473444078009 ;
-	setAttr ".r" -type "double3" -8.7383527295931192 79.399999999994961 0 ;
+	setAttr ".t" -type "double3" 2.5047163624541775 7.4155575231550737 15.544196274285273 ;
+	setAttr ".r" -type "double3" -15.938352729600661 5.8000000000022505 0 ;
 createNode camera -s -n "perspShape" -p "persp";
 	rename -uid "B806E32D-4620-F105-EBA9-07BA51D8D5C3";
 	setAttr -k off ".v" no;
 	setAttr ".fl" 34.999999999999993;
-	setAttr ".coi" 10.96440910271105;
+	setAttr ".coi" 14.556499701365267;
 	setAttr ".imn" -type "string" "persp";
 	setAttr ".den" -type "string" "persp_depth";
 	setAttr ".man" -type "string" "persp_mask";
-	setAttr ".tp" -type "double3" 0 4.8188900691646328 -2.2925810503645616 ;
+	setAttr ".tp" -type "double3" 3.2965912647392326 5.9881647610247439 0 ;
 	setAttr ".hc" -type "string" "viewSet -p %camera";
 	setAttr ".ai_translator" -type "string" "perspective";
 createNode transform -s -n "top";
@@ -81,19 +81,20 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".ai_translator" -type "string" "orthographic";
 createNode transform -n "CLTR_r_brow01";
 	rename -uid "BCC1FD02-4762-DD50-9EE9-E093BF9B4EF3";
-	setAttr ".t" -type "double3" 0 4.6512891611576137 0 ;
+	setAttr ".t" -type "double3" -3.5075899464211031 4.387947126667096 0 ;
+	setAttr ".r" -type "double3" 0 39.147793577778003 0 ;
 createNode locator -n "CLTR_r_browShape1" -p "CLTR_r_brow01";
 	rename -uid "E59146CD-4C5D-459E-8801-44AEE6A51863";
 	setAttr -k off ".v";
 createNode transform -n "CLTR_r_brow02";
 	rename -uid "E68B1546-410F-7075-2316-E6B03D007017";
-	setAttr ".t" -type "double3" 0 4.9864909771716519 -2.2668815418187389 ;
+	setAttr ".t" -type "double3" 0.33593732692835165 5.0900283898940524 0 ;
 createNode locator -n "CLTR_r_browShape2" -p "CLTR_r_brow02";
 	rename -uid "BFC4392D-4E91-BE7F-CE14-1EA4FFE26D85";
 	setAttr -k off ".v";
 createNode transform -n "CLTR_r_brow03";
 	rename -uid "C8F4D053-475E-165A-A1CC-1AB46792AE73";
-	setAttr ".t" -type "double3" 0 4.6569180896402216 -4.5851621007291232 ;
+	setAttr ".t" -type "double3" 2.7649846276115593 4.1545743865289761 0 ;
 createNode locator -n "CLTR_r_browShape3" -p "CLTR_r_brow03";
 	rename -uid "BD518D5B-4B28-225D-11E5-4799F8C26C74";
 	setAttr -k off ".v";

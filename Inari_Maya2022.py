@@ -42,10 +42,19 @@ def dock_window(dialog_class):
 
 class InariMayaCommandInterpreter(Inari.InariCommandInterpreter):
     def Host_SetSelection(self, items:typing.List[str]) -> None:
+        print(items)
         cmds.select(items, replace=True)
+        MyDockingUI.instances[0].inariWidget.update()
 
     def Host_GetSelection(self) -> typing.List[str]:
         return cmds.ls(selection=True, sn=True)
+
+    def Host_SetPosition(self, item:str, x:float, y:float, z:float, worldSpace:bool=False, relative:bool=True) -> None:
+        cmds.xform(item, translation=[x, y, z], worldSpace=worldSpace, r=relative)
+        MyDockingUI.instances[0].inariWidget.update()
+
+    def Host_GetPosition(self, item:str, worldSpace:bool=False) -> typing.List[float]:
+        return cmds.xform(item, q=True, t=True, ws=worldSpace)
 
 class MyDockingUI(QtWidgets.QWidget):
     instances = list()
@@ -73,6 +82,10 @@ class MyDockingUI(QtWidgets.QWidget):
         self.main_layout.addWidget(self.inariWidget)
         self.show()
  
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        self.update()
+        return super().mousePressEvent(event)        
+
     def __del__(self):
         om.MMessage.removeCallback(self.OnSelectionChangedEvent)
 
