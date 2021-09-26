@@ -41,18 +41,9 @@ def dock_window(dialog_class):
     return win.run()
 
 class InariMayaCommandInterpreter(Inari.InariCommandInterpreter):
-    def Host_Select(self, item:str) -> None:
-        cmds.select(str(item), add=True)
-
-    def Host_Deselect(self, item: str) -> None:
-        cmds.select(str(item), deselect=True)
-
     def Host_SetSelection(self, items:typing.List[str]) -> None:
         cmds.select(items, replace=True)
 
-    def Host_DeselectAll(self) -> None:
-        cmds.select(cl=True)  
-      
     def Host_GetSelection(self) -> typing.List[str]:
         return cmds.ls(selection=True, sn=True)
 

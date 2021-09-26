@@ -10,17 +10,8 @@ import json
 # TODO: Click+dragging a locator moves it.
 
 class InariCommandInterpreter():
-    def Host_Select(self, item:str) -> None:
-        print("Host_Select")
-
     def Host_SetSelection(self, items:typing.List[str]) -> None:
         print("Host_SetSelection")
-
-    def Host_Deselect(self, item:str) -> None:
-        print("Host_Deselect")
-
-    def Host_DeselectAll(self) -> None:
-        print("Host_DeselectAll")
 
     def Host_GetSelection(self) -> typing.List[str]:
         print("Host_GetSelection")
@@ -57,16 +48,6 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
 
     def name(self) -> str:
         return self._name
-
-    def itemChange(self, change: QtWidgets.QGraphicsItem.GraphicsItemChange, value: typing.Any) -> typing.Any:
-        if change == QGraphicsItem.ItemSelectedChange:
-            if value and not self.isSelected():
-                self._commandInterpreter.Host_Select(self._name)
-            elif not value and self.isSelected():
-                self._commandInterpreter.Host_Deselect(self._name)
-
-
-        return super().itemChange(change, value)
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: QtWidgets.QWidget = None) -> None:
         # Render SVG to pixmap.
@@ -151,8 +132,9 @@ class InariQGraphicsScene(QtWidgets.QGraphicsScene):
         self.setSceneRect(self.itemsBoundingRect().marginsAdded(QtCore.QMarginsF(1024*128, 1024*128, 1024*128, 1024*128)))
 
     def selectionChangedSignal(self) -> None:
-        if(len(self.selectedItems()) == 0):
-            self._commandInterpreter.Host_DeselectAll()
+        items = [item.name() for item in self.selectedItems() if isinstance(item, InariLocator)]
+        print(items)
+        self._commandInterpreter.Host_SetSelection(items)
 
     def selectionItemsBoundingRect(self):
         # Does not take untransformable items into account.
