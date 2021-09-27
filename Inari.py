@@ -1,7 +1,7 @@
 from os import terminal_size
-from PySide2.QtCore import QPoint
+from PySide2.QtCore import QPoint, QRectF, Qt
 
-from PySide2.QtWidgets import QFileDialog, QGraphicsItem, QWidget
+from PySide2.QtWidgets import QFileDialog, QGraphicsItem, QHBoxLayout, QPushButton, QWidget
 from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
 import typing
 import json
@@ -129,6 +129,7 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
         newPosition = self._initialPosition + delta
         self._commandInterpreter.Host_SetPosition(self.name(), newPosition.x(), newPosition.y(), 0, worldSpace=False, relative=False)
 
+
 class InariLocator(InariGraphicsSvgItem):
     def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
         super().mousePressEvent(event)
@@ -199,7 +200,7 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setGeometry(0, 0, 300, 300)
-        self.setBackgroundBrush(QtGui.QColor(45, 45, 45))
+        self.setBackgroundBrush(QtGui.QColor(26, 26, 26))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.setDragMode(QtWidgets.QGraphicsView.DragMode.RubberBandDrag)
 
@@ -286,6 +287,7 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
                 newSceneSpaceOriginPoint = self.mapToScene(self._lastRightMousePressPosition)
                 translationDelta = newSceneSpaceOriginPoint - oldSceneSpaceOriginPoint;
                 self.translate(translationDelta.x(), translationDelta.y())
+       
         self._lastMoveEventPosition = event.pos()
 
         super().mouseMoveEvent(event)
@@ -301,6 +303,58 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
             self.scale(1 / zoomFactor, 1 / zoomFactor)
         
 
+class InariToolbarButton(QtWidgets.QWidget):
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None, filepath:str = None) -> None:
+        super().__init__(parent=parent)
+        self.icon = QtGui.QIcon(filepath)
+
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:
+        painter = QtGui.QPainter()
+        painter.begin(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        self.icon.paint(painter, self.rect())
+        painter.end()
+
+class InariToolbarWidget(QtWidgets.QWidget):
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None, f: QtCore.Qt.WindowFlags = None) -> None:
+        super().__init__(parent=parent, f=f)
+        self.buttonSize = QtCore.QSize(22, 22)
+        self.buttonMargin = (self.size().height()-self.buttonSize.height())/2
+        self.settingsButton = InariToolbarButton(self, "./assets/v2/Button_Settings.svg")
+        self.settingsButton.resize(self.buttonSize)
+        self.openButton = InariToolbarButton(self, "./assets/v2/Button_Open.svg")
+        self.openButton.resize(self.buttonSize)
+        self.saveButton = InariToolbarButton(self, "./assets/v2/Button_Save.svg")
+        self.saveButton.resize(self.buttonSize)
+        self.newButton = InariToolbarButton(self, "./assets/v2/Button_New.svg")
+        self.newButton.resize(self.buttonSize)
+        self.terminalButton = InariToolbarButton(self, "./assets/v2/Button_Terminal.svg")
+        self.terminalButton.resize(self.buttonSize)
+
+
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:
+        super().paintEvent(event)
+        painter = QtGui.QPainter()
+        painter.begin(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        path = QtGui.QPainterPath()
+        path.addRoundedRect(0, 0, self.size().width(), self.size().height(), 10, 10)
+        painter.fillPath(path, QtGui.QColor(59, 59, 59))
+        painter.setFont(QtGui.QFont('Consolas', 12))
+        painter.setPen(QtGui.QColor(156, 156, 156))
+        painter.drawText(QtCore.QPointF(14, 22), "Khaos Systems | Inari")
+        painter.end()
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        super().resizeEvent(event)
+        self.buttonMargin = (self.size().height()-self.buttonSize.height())/2
+        self.settingsButton.move(self.size().width()-self.buttonSize.width()-self.buttonMargin, self.buttonMargin)
+        self.openButton.move(self.size().width()-(self.buttonSize.width()*2)-(self.buttonMargin*2), self.buttonMargin)
+        self.saveButton.move(self.size().width()-(self.buttonSize.width()*3)-(self.buttonMargin*3), self.buttonMargin)
+        self.newButton.move(self.size().width()-(self.buttonSize.width()*4)-(self.buttonMargin*4), self.buttonMargin)
+        self.terminalButton.move(self.size().width()-(self.buttonSize.width()*5)-(self.buttonMargin*5), self.buttonMargin)
+
+
 class InariWidget(QtWidgets.QWidget):
     _commandInterpreter:InariCommandInterpreter = InariCommandInterpreter()
 
@@ -312,21 +366,20 @@ class InariWidget(QtWidgets.QWidget):
         self.scene = InariQGraphicsScene(self)
         self.scene.setCommandInterpreter(self._commandInterpreter)
         self.view = InariQGraphicsView(self.scene, self)
+        self.view.move(0, 0)
         self.view.show()
-            
-        hlayout = QtWidgets.QHBoxLayout()
-        clearButton = QtWidgets.QPushButton("Clear", self)
-        clearButton.clicked.connect(self.RemoveAllItems)
-        hlayout.addWidget(clearButton)
-        openButton = QtWidgets.QPushButton("Open", self)
-        openButton.clicked.connect(self.Open)
-        hlayout.addWidget(openButton)
 
-        layout = QtWidgets.QVBoxLayout()
-        layout.setMargin(0)
-        layout.addLayout(hlayout)
-        layout.addWidget(self.view)
-        self.setLayout(layout)
+        self.toolbarWidget = InariToolbarWidget(self, Qt.WindowFlags())
+        self.toolbarWidget.move(10, 10)
+        self.toolbarWidget.show()
+        
+        #clearButton.clicked.connect(self.RemoveAllItems)
+        #openButton.clicked.connect(self.Open)
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        super().resizeEvent(event)
+        self.view.resize(self.size().width(), self.size().height())
+        self.toolbarWidget.resize(self.size().width()-20, 35)
 
     def SetSelection(self, items:typing.List[str]) -> None:
         self.scene.clearSelection()
@@ -337,7 +390,6 @@ class InariWidget(QtWidgets.QWidget):
 
     def Open(self):
         path = QtWidgets.QFileDialog.getOpenFileName(self)[0]
-        print(path)
         self.RemoveAllItems()
         self.Load(path)
 
