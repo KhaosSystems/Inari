@@ -1,7 +1,7 @@
 from os import terminal_size
 from PySide2.QtCore import QPoint
 
-from PySide2.QtWidgets import QGraphicsItem
+from PySide2.QtWidgets import QFileDialog, QGraphicsItem, QWidget
 from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
 import typing
 import json
@@ -314,9 +314,18 @@ class InariWidget(QtWidgets.QWidget):
         self.scene.setCommandInterpreter(self._commandInterpreter)
         self.view = InariQGraphicsView(self.scene, self)
         self.view.show()
+            
+        hlayout = QtWidgets.QHBoxLayout()
+        clearButton = QtWidgets.QPushButton("Clear", self)
+        clearButton.clicked.connect(self.RemoveAllItems)
+        hlayout.addWidget(clearButton)
+        openButton = QtWidgets.QPushButton("Open", self)
+        openButton.clicked.connect(self.Open)
+        hlayout.addWidget(openButton)
 
-        layout = QtWidgets.QHBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         layout.setMargin(0)
+        layout.addLayout(hlayout)
         layout.addWidget(self.view)
         self.setLayout(layout)
 
@@ -326,6 +335,16 @@ class InariWidget(QtWidgets.QWidget):
             if isinstance(item, InariLocator):
                 if item.name() in items:
                     item.setSelected(True)
+
+    def Open(self):
+        path = QtWidgets.QFileDialog.getOpenFileName(self)[0]
+        print(path)
+        self.RemoveAllItems()
+        self.Load(path)
+
+    def RemoveAllItems(self):
+        for item in self.scene.items():
+            self.scene.removeItem(item)
 
     def Load(self, filepath):
         with open(filepath, "r") as file:
