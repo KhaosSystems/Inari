@@ -8,7 +8,6 @@ import json
 
 # TODO: Set propper stating position.
 # TODO: Alt mouse wheel always zoom out.
-# TODO: Load project
 
 class InariCommandInterpreter():
     def Host_SetSelection(self, items:typing.List[str]) -> None:
