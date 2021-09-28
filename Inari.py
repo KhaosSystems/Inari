@@ -1,7 +1,7 @@
 from os import terminal_size
 from PySide2.QtCore import QPoint, QRectF, Qt
 
-from PySide2.QtWidgets import QFileDialog, QGraphicsItem, QHBoxLayout, QPushButton, QWidget
+from PySide2.QtWidgets import QFileDialog, QGraphicsItem, QHBoxLayout, QPushButton, QStyleOptionViewItem, QWidget
 from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
 import typing
 import json
@@ -215,7 +215,7 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
                 selectionBounds = self.scene().selectionItemsBoundingRect()
             else:
                 selectionBounds = self.scene().itemsBoundingRect()
-            selectionBounds = selectionBounds.marginsAdded(QtCore.QMarginsF(64, 64, 64, 64))
+            selectionBounds = selectionBounds.marginsAdded(QtCore.QMarginsF(64, 64+50, 64, 64))
             self.fitInView(selectionBounds, QtCore.Qt.KeepAspectRatio)
 
         # Handle KeyboardModifiers
