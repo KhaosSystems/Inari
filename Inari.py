@@ -1,7 +1,7 @@
 from os import terminal_size
 from PySide2.QtCore import QPoint, QRectF, Qt
 
-from PySide2.QtWidgets import QFileDialog, QGraphicsItem, QHBoxLayout, QPushButton, QStyleOptionViewItem, QWidget
+from PySide2.QtWidgets import QApplication, QFileDialog, QGraphicsItem, QHBoxLayout, QPushButton, QStyleOptionViewItem, QWidget
 from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
 import typing
 import json
@@ -203,6 +203,7 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
         self.setBackgroundBrush(QtGui.QColor(26, 26, 26))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.setDragMode(QtWidgets.QGraphicsView.DragMode.RubberBandDrag)
+        QtWidgets.QApplication.instance().setStyleSheet("QGraphicsView { background-color: yellow }")
 
     def setCommandInterpreter(self, commandInterpreter:InariCommandInterpreter):
         self._commandInterpreter = commandInterpreter
@@ -303,34 +304,54 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
             self.scale(1 / zoomFactor, 1 / zoomFactor)
         
 
-class InariToolbarButton(QtWidgets.QWidget):
-    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None, filepath:str = None) -> None:
+class InariToolbarButton(QtWidgets.QPushButton):
+    _hovering: bool = False
+
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None, filepath: str = None, hoverFilepath: str = None) -> None:
         super().__init__(parent=parent)
         self.icon = QtGui.QIcon(filepath)
+        self.hoverIcon = QtGui.QIcon(hoverFilepath)
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         painter = QtGui.QPainter()
         painter.begin(self)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        self.icon.paint(painter, self.rect())
+        if self._hovering:
+            self.hoverIcon.paint(painter, self.rect())
+        else:
+            self.icon.paint(painter, self.rect())
         painter.end()
 
+    def enterEvent(self, event: QtCore.QEvent) -> None:
+        super().enterEvent(event)
+        self._hovering = True
+        self.update()
+
+    def leaveEvent(self, event: QtCore.QEvent) -> None:
+        super().leaveEvent(event)
+        self._hovering = False
+        self.update()
+
 class InariToolbarWidget(QtWidgets.QWidget):
-    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None, f: QtCore.Qt.WindowFlags = None) -> None:
-        super().__init__(parent=parent, f=f)
+    _inariWidget: "InariWidget" = None
+
+    def __init__(self, inariWidget: "InariWidget", f: QtCore.Qt.WindowFlags = None) -> None:
+        super().__init__(parent=inariWidget, f=f)
+        self._inariWidget = inariWidget
         self.buttonSize = QtCore.QSize(22, 22)
         self.buttonMargin = (self.size().height()-self.buttonSize.height())/2
-        self.settingsButton = InariToolbarButton(self, "./assets/v2/Button_Settings.svg")
+        self.settingsButton = InariToolbarButton(self, "./assets/v2/Button_Settings.svg", "./assets/v2/Button_Settings_Hover.svg")
         self.settingsButton.resize(self.buttonSize)
-        self.openButton = InariToolbarButton(self, "./assets/v2/Button_Open.svg")
+        self.openButton = InariToolbarButton(self, "./assets/v2/Button_Open.svg", "./assets/v2/Button_Open_Hover.svg")
         self.openButton.resize(self.buttonSize)
-        self.saveButton = InariToolbarButton(self, "./assets/v2/Button_Save.svg")
+        self.openButton.clicked.connect(self.openButtonPressed)
+        self.saveButton = InariToolbarButton(self, "./assets/v2/Button_Save.svg", "./assets/v2/Button_Save_Hover.svg")
         self.saveButton.resize(self.buttonSize)
-        self.newButton = InariToolbarButton(self, "./assets/v2/Button_New.svg")
+        self.newButton = InariToolbarButton(self, "./assets/v2/Button_New.svg", "./assets/v2/Button_New_Hover.svg")
         self.newButton.resize(self.buttonSize)
-        self.terminalButton = InariToolbarButton(self, "./assets/v2/Button_Terminal.svg")
+        self.newButton.clicked.connect(self.newButtonPressed)
+        self.terminalButton = InariToolbarButton(self, "./assets/v2/Button_Terminal.svg", "./assets/v2/Button_Terminal_Hover.svg")
         self.terminalButton.resize(self.buttonSize)
-
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         super().paintEvent(event)
@@ -354,6 +375,13 @@ class InariToolbarWidget(QtWidgets.QWidget):
         self.newButton.move(self.size().width()-(self.buttonSize.width()*4)-(self.buttonMargin*4), self.buttonMargin)
         self.terminalButton.move(self.size().width()-(self.buttonSize.width()*5)-(self.buttonMargin*5), self.buttonMargin)
 
+    def newButtonPressed(self):
+        self._inariWidget.clearScene()
+
+    def openButtonPressed(self):
+        path = QtWidgets.QFileDialog.getOpenFileName(self)[0]
+        self._inariWidget.clearScene()
+        self._inariWidget.deserializeScene(path)
 
 class InariWidget(QtWidgets.QWidget):
     _commandInterpreter:InariCommandInterpreter = InariCommandInterpreter()
@@ -388,16 +416,11 @@ class InariWidget(QtWidgets.QWidget):
                 if item.name() in items:
                     item.setSelected(True)
 
-    def Open(self):
-        path = QtWidgets.QFileDialog.getOpenFileName(self)[0]
-        self.RemoveAllItems()
-        self.Load(path)
-
-    def RemoveAllItems(self):
+    def clearScene(self):
         for item in self.scene.items():
             self.scene.removeItem(item)
 
-    def Load(self, filepath):
+    def deserializeScene(self, filepath: str):
         with open(filepath, "r") as file:
             obj = json.loads(file.read())
 
