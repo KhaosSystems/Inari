@@ -1,4 +1,5 @@
 from os import terminal_size
+from types import FrameType
 from PySide2.QtCore import QPoint, QRectF, Qt
 
 from PySide2.QtWidgets import QApplication, QFileDialog, QGraphicsItem, QHBoxLayout, QPushButton, QStyleOptionViewItem, QWidget
@@ -208,16 +209,19 @@ class InariQGraphicsView(QtWidgets.QGraphicsView):
     def setCommandInterpreter(self, commandInterpreter:InariCommandInterpreter):
         self._commandInterpreter = commandInterpreter
 
+    def frameSelected(self):
+        if len(self.scene().selectedItems()) > 0:
+            selectionBounds = self.scene().selectionItemsBoundingRect()
+        else:
+            selectionBounds = self.scene().itemsBoundingRect()
+        selectionBounds = selectionBounds.marginsAdded(QtCore.QMarginsF(64, 64+50, 64, 64))
+        self.fitInView(selectionBounds, QtCore.Qt.KeepAspectRatio)
+
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         super().keyPressEvent(event)
 
         if event.key() == QtCore.Qt.Key_F:
-            if len(self.scene().selectedItems()) > 0:
-                selectionBounds = self.scene().selectionItemsBoundingRect()
-            else:
-                selectionBounds = self.scene().itemsBoundingRect()
-            selectionBounds = selectionBounds.marginsAdded(QtCore.QMarginsF(64, 64+50, 64, 64))
-            self.fitInView(selectionBounds, QtCore.Qt.KeepAspectRatio)
+            self.frameSelected()
 
         # Handle KeyboardModifiers
         if bool(QtWidgets.QApplication.queryKeyboardModifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
@@ -382,6 +386,7 @@ class InariToolbarWidget(QtWidgets.QWidget):
         path = QtWidgets.QFileDialog.getOpenFileName(self)[0]
         self._inariWidget.clearScene()
         self._inariWidget.deserializeScene(path)
+        self._inariWidget.inariView.frameSelected()
 
 class InariWidget(QtWidgets.QWidget):
     _commandInterpreter:InariCommandInterpreter = InariCommandInterpreter()
@@ -391,11 +396,11 @@ class InariWidget(QtWidgets.QWidget):
 
         self._commandInterpreter = commandInterpreter
 
-        self.scene = InariQGraphicsScene(self)
-        self.scene.setCommandInterpreter(self._commandInterpreter)
-        self.view = InariQGraphicsView(self.scene, self)
-        self.view.move(0, 0)
-        self.view.show()
+        self.inariScene = InariQGraphicsScene(self)
+        self.inariScene.setCommandInterpreter(self._commandInterpreter)
+        self.inariView = InariQGraphicsView(self.inariScene, self)
+        self.inariView.move(0, 0)
+        self.inariView.show()
 
         self.toolbarWidget = InariToolbarWidget(self, Qt.WindowFlags())
         self.toolbarWidget.move(10, 10)
@@ -406,19 +411,19 @@ class InariWidget(QtWidgets.QWidget):
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
-        self.view.resize(self.size().width(), self.size().height())
+        self.inariView.resize(self.size().width(), self.size().height())
         self.toolbarWidget.resize(self.size().width()-20, 35)
 
     def SetSelection(self, items:typing.List[str]) -> None:
-        self.scene.clearSelection()
-        for item in self.scene.items():
+        self.inariScene.clearSelection()
+        for item in self.inariScene.items():
             if isinstance(item, InariLocator):
                 if item.name() in items:
                     item.setSelected(True)
 
     def clearScene(self):
-        for item in self.scene.items():
-            self.scene.removeItem(item)
+        for item in self.inariScene.items():
+            self.inariScene.removeItem(item)
 
     def deserializeScene(self, filepath: str):
         with open(filepath, "r") as file:
@@ -464,4 +469,4 @@ class InariWidget(QtWidgets.QWidget):
                         QtCore.Qt.MouseButton.NoButton)
                     item.setAcceptHoverEvents(False)
 
-                self.scene.addItem(item)        
+                self.inariScene.addItem(item)            
