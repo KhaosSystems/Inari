@@ -8,6 +8,9 @@ import typing
 import json
 
 # TODO: Alt mouse wheel always zoom out.
+# TODO: Comment and refactor; make stuff look nice.
+# TODO: Add remaining locators to example.json.
+# TODO: Optimize.
 
 # region Core
 class InariCommandInterpreter():
@@ -123,7 +126,7 @@ class InariView(QtWidgets.QGraphicsView):
 
         # Handle KeyboardModifiers
         if not bool(QtWidgets.QApplication.queryKeyboardModifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
-            self.scene().SetShouldPropagateEventsToItems(True)
+            self.scene().setShouldPropagateEventsToItems(True)
             self.setDragMode(QtWidgets.QGraphicsView.DragMode.RubberBandDrag)
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
