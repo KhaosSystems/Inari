@@ -1,6 +1,6 @@
 from os import terminal_size
 from types import FrameType
-from PySide2.QtCore import QPoint, QRectF, Qt
+from PySide2.QtCore import QPoint, QPointF, QRectF, Qt
 
 from PySide2.QtWidgets import QApplication, QFileDialog, QGraphicsItem, QHBoxLayout, QPushButton, QStyleOptionViewItem, QWidget
 from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
@@ -36,15 +36,10 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
     _initialLeftClickPosition = None
     _initialPosition:QtCore.QPoint() = None
 
-    """def sceneEvent(self, event: QtCore.QEvent) -> bool:
-        if self.scene.isMoveing
-            event.ignore()
-        else:
-            super().sceneEvent(event)"""
-
-    def __init__(self, fileName: str, commandInterpreter:InariCommandInterpreter=None, parentItem: typing.Optional[QtWidgets.QGraphicsItem] = ...) -> None:
-        super().__init__(fileName)
-
+    def __init__(self, filepath: str, hoverFilepath: str = None, commandInterpreter:InariCommandInterpreter=None, parentItem: typing.Optional[QtWidgets.QGraphicsItem] = ...) -> None:
+        super().__init__(filepath)
+        self.icon = QtGui.QIcon(filepath)
+        self.hoverIcon = QtGui.QIcon(hoverFilepath)
         self._commandInterpreter = commandInterpreter
         # TODO: This is temporary set in Load, fix
         # self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
@@ -61,7 +56,13 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
         return self._name
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: QtWidgets.QWidget = None) -> None:
-        # Render SVG to pixmap.
+        self.renderer().render(painter, self.boundingRect())
+
+        if self.isUnderMouse() or self.isSelected():
+            if self.isClicking() == True:
+                pass
+                
+        """# Render SVG to pixmap.
         pixmap = QtGui.QPixmap(painter.device().width(), painter.device().height())
         pixmap.fill(QtCore.Qt.transparent)
         pixmapPainter = QtGui.QPainter()
@@ -86,7 +87,15 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
             painter.setCompositionMode(QtGui.QPainter.CompositionMode_Screen)
             painter.drawImage(self.boundingRect(), image)
             if self.isClicking() == True:
-                painter.drawImage(self.boundingRect(), image)
+                painter.drawImage(self.boundingRect(), image)"""
+
+        """ painter.begin(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        if self.isUnderMouse() or self.isSelected():
+            self.hoverIcon.paint(painter, self.rect())
+        else:
+            self.icon.paint(painter, self.rect())
+        painter.end()"""
 
     def isUnderMouse(self) -> bool:
         return self._isUnderMouse
@@ -131,9 +140,31 @@ class InariGraphicsSvgItem(QtSvg.QGraphicsSvgItem):
         self._commandInterpreter.Host_SetPosition(self.name(), newPosition.x(), newPosition.y(), 0, worldSpace=False, relative=False)
 
 
-class InariLocator(InariGraphicsSvgItem):
-    def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        super().mousePressEvent(event)
+class InariStaticGraphics(InariGraphicsSvgItem):
+    def __init__(self, fileName: str, commandInterpreter: InariCommandInterpreter = None, parentItem: typing.Optional[QtWidgets.QGraphicsItem] = ...) -> None:
+        super().__init__(fileName, commandInterpreter=commandInterpreter, parentItem=parentItem)
+
+
+class InariLocator(QtWidgets.QGraphicsItem):
+    renderer: QtSvg.QSvgRenderer = None
+    hoverRenderer: QtSvg.QSvgRenderer = None
+
+    def __init__(self, filepath: str, hoverFilepath: str, parent: typing.Optional[QtWidgets.QGraphicsItem] = None) -> None:
+        super().__init__()
+        self.renderer = QtSvg.QSvgRenderer(filepath)
+        self.hoverRenderer = QtSvg.QSvgRenderer(hoverFilepath)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
+        self.setAcceptedMouseButtons(QtCore.Qt.MouseButton.AllButtons)
+        self.setAcceptHoverEvents(True)
+
+    def boundingRect(self) -> QtCore.QRectF:
+        return QtCore.QRectF(QtCore.QPointF(0, 0), self.renderer.defaultSize())
+
+    def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: typing.Optional[QtWidgets.QWidget] = ...) -> None:
+        self.renderer.render(painter, self.boundingRect())
+        if self.isSelected():
+            self.hoverRenderer.render(painter, self.boundingRect())
+
 
 
 class InariQGraphicsScene(QtWidgets.QGraphicsScene):
@@ -336,6 +367,7 @@ class InariToolbarButton(QtWidgets.QPushButton):
         self._hovering = False
         self.update()
 
+
 class InariToolbarWidget(QtWidgets.QWidget):
     _inariWidget: "InariWidget" = None
 
@@ -388,6 +420,7 @@ class InariToolbarWidget(QtWidgets.QWidget):
         self._inariWidget.deserializeScene(path)
         self._inariWidget.inariView.frameSelected()
 
+
 class InariWidget(QtWidgets.QWidget):
     _commandInterpreter:InariCommandInterpreter = InariCommandInterpreter()
 
@@ -435,7 +468,7 @@ class InariWidget(QtWidgets.QWidget):
                 item = None
                 if "imagePath" in element:
                     print(" - imagePath: " + str(element["imagePath"]))
-                    item = InariLocator("C:/Dev/Inari/" + element["imagePath"], self._commandInterpreter, self)
+                    item = InariLocator("C:/Dev/Inari/" + element["imagePath"], "C:/Dev/Inari/" + element["hoverImagePath"])
                 else:
                     print("[ERROR] All elements need an \"imagePath\".")
                     return

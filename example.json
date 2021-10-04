@@ -1,9 +1,32 @@
 {
     "elements": [
-        { "imagePath": "./assets/v2/Eyebrow.svg", "positionX": 0},
-        { "imagePath": "./assets/v2/Eyebrow.svg", "positionX": 448, "flip": true},
-        { "imagePath": "./assets/v2/Eye.svg", "positionX": 0, "positionY": 200 },
-        { "imagePath": "./assets/v2/Eye.svg", "positionX": 443, "positionY": 200 },
-        { "imagePath": "./assets/v2/LowerFace.svg", "positionX": 55, "positionY": 475, "flip": false }
+        { 
+            "imagePath": "./assets/v2/Eyebrow_Background.svg",
+            "hoverImagePath": "./assets/v2/Eyebrow_Background.svg"
+        },
+        { 
+            "imagePath": "./assets/v2/Eyebrow_Button01.svg",
+            "hoverImagePath": "./assets/v2/Eyebrow_Button01_Hover.svg",
+            "positionX": 22.20,
+            "positionY": 25.57
+        },
+        { 
+            "imagePath": "./assets/v2/Eyebrow_Button02.svg",
+            "hoverImagePath": "./assets/v2/Eyebrow_Button02_Hover.svg",
+            "positionX": 162.91,
+            "positionY": 34.48
+        },
+        { 
+            "imagePath": "./assets/v2/Eyebrow_Button03.svg",
+            "hoverImagePath": "./assets/v2/Eyebrow_Button03_Hover.svg",
+            "positionX": 226.42,
+            "positionY": 43.49
+        },
+        {
+            "imagePath": "./assets/v2/Eyebrow_Button04.svg",
+            "hoverImagePath": "./assets/v2/Eyebrow_Button04_Hover.svg",
+            "positionX": 84.23,
+            "positionY": 8.64
+        }
     ]
 }

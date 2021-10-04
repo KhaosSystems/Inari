@@ -16,7 +16,7 @@ class Window(QtWidgets.QWidget):
         self.setWindowIcon(QtGui.QIcon("icon.png"))
 
         inariWidget = InariWidget(self, InariCommandInterpreter())
-
+        
         layout = QtWidgets.QVBoxLayout()
         layout.setMargin(0)
         layout.addWidget(inariWidget)
