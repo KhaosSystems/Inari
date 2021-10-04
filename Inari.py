@@ -12,17 +12,17 @@ import json
 # region Core
 class InariCommandInterpreter():
     def Host_SetSelection(self, items:typing.List[str]) -> None:
-        print("Host_SetSelection")
+        print(f'Host_SetSelection(items: {items})')
 
     def Host_GetSelection(self) -> typing.List[str]:
-        print("Host_GetSelection")
+        print(f'Host_GetSelection()')
         return []
 
     def Host_SetPosition(self, item:str, x:float, y:float, z:float, worldSpace:bool=False, relative:bool=True) -> None:
-        print("Host_SetPosition")
+        print(f'Host_SetSelection(item: {item}, x: {x}, y: {y}, z: {z}, worldSpace: {worldSpace}, relative: {relative})')
 
     def Host_GetPosition(self, item:str, worldSpace:bool=False, relative:bool=True) -> typing.List[float]:
-        print("Host_GetPosition")
+        print(f'Host_GetSelection(item: {item}, worldSpace: {worldSpace}, relative: {relative})')
         return [0, 0, 0]
 
 
@@ -50,7 +50,7 @@ class InariScene(QtWidgets.QGraphicsScene):
 
         return super().mouseMoveEvent(event)
 
-    def SetShouldPropagateEventsToItems(self, shouldPropagateEventsToItems: bool) -> None:
+    def setShouldPropagateEventsToItems(self, shouldPropagateEventsToItems: bool) -> None:
         self._shouldPropagateEventsToItems = shouldPropagateEventsToItems
 
     def event(self, event: QtCore.QEvent) -> bool:
@@ -64,7 +64,7 @@ class InariScene(QtWidgets.QGraphicsScene):
         self.setSceneRect(self.itemsBoundingRect().marginsAdded(QtCore.QMarginsF(1024*128, 1024*128, 1024*128, 1024*128)))
 
     def selectionChangedSignal(self) -> None:
-        items = [item.name for item in self.selectedItems() if isinstance(item, InariLocator)]
+        items = [item.itemName for item in self.selectedItems() if isinstance(item, InariLocator)]
         self._commandInterpreter.Host_SetSelection(items)
 
     def selectionItemsBoundingRect(self):
@@ -115,7 +115,7 @@ class InariView(QtWidgets.QGraphicsView):
 
         # Handle KeyboardModifiers
         if bool(QtWidgets.QApplication.queryKeyboardModifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
-            self.scene().SetShouldPropagateEventsToItems(False)
+            self.scene().setShouldPropagateEventsToItems(False)
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
 
     def keyReleaseEvent(self, event: QtGui.QKeyEvent) -> None:
@@ -215,20 +215,17 @@ class InariWidget(QtWidgets.QWidget):
         self.toolbarWidget = InariToolbarWidget(self, Qt.WindowFlags())
         self.toolbarWidget.move(10, 10)
         self.toolbarWidget.show()
-        
-        #clearButton.clicked.connect(self.RemoveAllItems)
-        #openButton.clicked.connect(self.Open)
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
         self.inariView.resize(self.size().width(), self.size().height())
         self.toolbarWidget.resize(self.size().width()-20, 35)
 
-    def SetSelection(self, items:typing.List[str]) -> None:
+    def setSelection(self, items:typing.List[str]) -> None:
         self.inariScene.clearSelection()
         for item in self.inariScene.items():
             if isinstance(item, InariLocator):
-                if item.name() in items:
+                if item.itemName() in items:
                     item.setSelected(True)
 
     def clearScene(self):
@@ -237,107 +234,54 @@ class InariWidget(QtWidgets.QWidget):
 
     def deserializeScene(self, filepath: str):
         with open(filepath, "r") as file:
-            obj = json.loads(file.read())
+            projectObject = json.loads(file.read())
+            if "items" in projectObject:
+                self.deserializeJsonElementsList(None, projectObject["items"])
 
-            for element in obj["elements"]:
+    def deserializeJsonElementsList(self, parent:QtWidgets.QGraphicsItem, jsonItems):
+        for jsonItem in jsonItems:
                 item = None
-                if "type" in element:
-                    if element["type"] == "InariItem":
-                        item = InariItem(self, str(element["imagePath"]))
-                        item.setCommandInterpreter(self.inariCommandInterpreter)
-                        item.setPos(float(element["positionX"]), float(element["positionY"]))
-                    elif element["type"] == "InariLocator":
-                        item = InariLocator(self, str(element["imagePath"]), str(element["hoverImagePath"]))
-                        item.setCommandInterpreter(self.inariCommandInterpreter)
-                        item.setPos(float(element["positionX"]), float(element["positionY"]))
+                # Deserialize type specific item properties 
+                if "type" in jsonItem:
+                    if jsonItem["type"] == "InariItem":
+                        if "imagePath" in jsonItem:
+                            item = InariItem(self, str(jsonItem["imagePath"]))
+                    elif jsonItem["type"] == "InariLocator":
+                        item = InariLocator(self, str(jsonItem["imagePath"]), str(jsonItem["hoverImagePath"]))
+                        item.setItemName(str(jsonItem["itemName"]))
+                    
+                # Deserialize generic item properties 
+                if jsonItem != None:
+                    # Set command interpreter reference
+                    item.setCommandInterpreter(self.inariCommandInterpreter)
 
-                if item != None:
-                    self.inariScene.addItem(item)
+                    # Set item position
+                    if "positionX" in jsonItem:
+                        item.setX(float(jsonItem["positionX"]))
+                    if "positionY" in jsonItem:
+                        item.setY(float(jsonItem["positionY"]))
 
-                """
-                if "flip" in element:
-                    print(" - flip: " + str(element["flip"]))
-                    if element["flip"] == True:
-                        transform = item.transform()
-                        transform.scale(-1, 1)
-                        item.setX(item.x() + item.boundingRect().width())
-                        item.setTransform(transform)
+                    # Set item scale
+                    if "scaleX" in jsonItem:
+                        if float(jsonItem["scaleX"]) < 0:
+                            item.setX(item.x() + (item.boundingRect().width() * abs(float(jsonItem["scaleX"]))))
+                        item.setTransform(item.transform().scale(float(jsonItem["scaleX"]), 1))
+                    if "scaleY" in jsonItem:
+                        if float(jsonItem["scaleY"]) < 0:
+                            item.setY(item.y() + (item.boundingRect().height() * abs(float(jsonItem["scaleY"]))))
+                        item.setTransform(item.transform().scale(float(jsonItem["scaleY"]), 1))
 
-                # TODO: This should happen inside the item, not here
-                if "command" in element:
-                    item.setFlag(
-                        QtWidgets.QGraphicsItem.ItemIsSelectable, True)
-                    item.setAcceptedMouseButtons(
-                        QtCore.Qt.MouseButton.AllButtons)
-                    item.setAcceptHoverEvents(True)
-                    item.setName(element["command"])
-                else:
-                    """
-# endregion
+                    # Add item to scene
+                    if parent != None:
+                        # setParentItem will add the item to the scene automatically.
+                        item.setParentItem(parent)
+                    else:
+                        self.inariScene.addItem(item)
 
-# region Items
-class InariItem(QtWidgets.QGraphicsItem):
-    inariWidget: "InariWidget" = None
-    renderer: QtSvg.QSvgRenderer = None
-    commandInterpreter: InariCommandInterpreter = None 
+                    # Deserialize sub-items
+                    if "items" in jsonItem:
+                        self.deserializeJsonElementsList(item, jsonItem["items"])
 
-    def __init__(self, inariWidget: "InariWidget", filepath: str) -> None:
-        super().__init__()
-        self.renderer = QtSvg.QSvgRenderer(filepath)
-
-    def setCommandInterpreter(self, commandInterpreter: InariCommandInterpreter):
-        self.commandInterpreter = commandInterpreter
-
-    def boundingRect(self) -> QtCore.QRectF:
-        return QtCore.QRectF(QtCore.QPointF(0, 0), self.renderer.defaultSize())
-
-    def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: typing.Optional[QtWidgets.QWidget] = ...) -> None:
-        self.renderer.render(painter, self.boundingRect())
-
-
-class InariLocator(InariItem):
-    hoverRenderer: QtSvg.QSvgRenderer = None
-    name: str = None
-    _initialLeftClickPosition: QtCore.QPointF = None
-    _initialPosition: QtCore.QPoint = None
-
-    def __init__(self, inariWidget: "InariWidget", filepath: str, hoverFilepath: str) -> None:
-        super().__init__(inariWidget, filepath)
-        self.hoverRenderer = QtSvg.QSvgRenderer(hoverFilepath)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
-        self.setAcceptedMouseButtons(QtCore.Qt.MouseButton.AllButtons)
-        self.setAcceptHoverEvents(True)
-
-    def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: typing.Optional[QtWidgets.QWidget] = ...) -> None:
-        self.renderer.render(painter, self.boundingRect())
-        if self.isSelected():
-            self.hoverRenderer.render(painter, self.boundingRect())
-            
-    def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        super().mousePressEvent(event)
-
-        if (event.button() == QtCore.Qt.LeftButton):
-            self.scene().registerSceneMouseMoveEventListener(self)
-            self._initialLeftClickPosition = event.scenePos()
-            pos = self.commandInterpreter.Host_GetPosition(self.name, worldSpace=False)
-            self._initialPosition = QtCore.QPointF(pos[0], pos[1])
-            
-        self.update()
-
-    def mouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        super().mouseReleaseEvent(event)
-
-        if (event.button() == QtCore.Qt.LeftButton):
-            self.scene().unregisterSceneMouseMoveEventListener(self)
-
-        self.update()
-
-    def sceneMouseMoveEvent(self, event:QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        delta = (event.scenePos() - self._initialLeftClickPosition)
-        delta.setY(delta.y() * -1)
-        delta /= 100
-        newPosition = self._initialPosition + delta
-        self.commandInterpreter.Host_SetPosition(self.name, newPosition.x(), newPosition.y(), 0, worldSpace=False, relative=False)
 # endregion
 
 #region Toolbar
@@ -422,3 +366,71 @@ class InariToolbarWidget(QtWidgets.QWidget):
         self._inariWidget.deserializeScene(path)
         self._inariWidget.inariView.frameSelected()
 #endregion
+
+# region Items
+class InariItem(QtWidgets.QGraphicsItem):
+    inariWidget: "InariWidget" = None
+    renderer: QtSvg.QSvgRenderer = None
+    commandInterpreter: InariCommandInterpreter = None 
+
+    def __init__(self, inariWidget: "InariWidget", filepath: str) -> None:
+        super().__init__()
+        self.renderer = QtSvg.QSvgRenderer(filepath)
+
+    def setCommandInterpreter(self, commandInterpreter: InariCommandInterpreter):
+        self.commandInterpreter = commandInterpreter
+
+    def boundingRect(self) -> QtCore.QRectF:
+        return QtCore.QRectF(QtCore.QPointF(0, 0), self.renderer.defaultSize())
+
+    def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: typing.Optional[QtWidgets.QWidget] = ...) -> None:
+        self.renderer.render(painter, self.boundingRect())
+
+
+class InariLocator(InariItem):
+    hoverRenderer: QtSvg.QSvgRenderer = None
+    itemName: str = None
+    _initialLeftClickPosition: QtCore.QPointF = None
+    _initialPosition: QtCore.QPoint = None
+
+    def __init__(self, inariWidget: "InariWidget", filepath: str, hoverFilepath: str) -> None:
+        super().__init__(inariWidget, filepath)
+        self.hoverRenderer = QtSvg.QSvgRenderer(hoverFilepath)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
+        self.setAcceptedMouseButtons(QtCore.Qt.MouseButton.AllButtons)
+        self.setAcceptHoverEvents(True)
+
+    def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: typing.Optional[QtWidgets.QWidget] = ...) -> None:
+        self.renderer.render(painter, self.boundingRect())
+        if self.isSelected():
+            self.hoverRenderer.render(painter, self.boundingRect())
+
+    def setItemName(self, itemName: str) -> None:
+        self.itemName = itemName
+
+    def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
+        super().mousePressEvent(event)
+
+        if (event.button() == QtCore.Qt.LeftButton):
+            self.scene().registerSceneMouseMoveEventListener(self)
+            self._initialLeftClickPosition = event.scenePos()
+            pos = self.commandInterpreter.Host_GetPosition(self.itemName, worldSpace=False)
+            self._initialPosition = QtCore.QPointF(pos[0], pos[1])
+            
+        self.update()
+
+    def mouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
+        super().mouseReleaseEvent(event)
+
+        if (event.button() == QtCore.Qt.LeftButton):
+            self.scene().unregisterSceneMouseMoveEventListener(self)
+
+        self.update()
+
+    def sceneMouseMoveEvent(self, event:QtWidgets.QGraphicsSceneMouseEvent) -> None:
+        delta = (event.scenePos() - self._initialLeftClickPosition)
+        delta.setY(delta.y() * -1)
+        delta /= 100
+        newPosition = self._initialPosition + delta
+        self.commandInterpreter.Host_SetPosition(self.itemName, newPosition.x(), newPosition.y(), 0, worldSpace=False, relative=False)
+# endregion
