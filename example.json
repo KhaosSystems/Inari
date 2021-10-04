@@ -1,28 +1,34 @@
 {
     "elements": [
         { 
+            "type": "InariItem",
             "imagePath": "./assets/v2/Eyebrow_Background.svg",
-            "hoverImagePath": "./assets/v2/Eyebrow_Background.svg"
+            "positionX": 0,
+            "positionY": 0
         },
         { 
+            "type": "InariLocator",
             "imagePath": "./assets/v2/Eyebrow_Button01.svg",
             "hoverImagePath": "./assets/v2/Eyebrow_Button01_Hover.svg",
             "positionX": 22.20,
             "positionY": 25.57
         },
         { 
+            "type": "InariLocator",
             "imagePath": "./assets/v2/Eyebrow_Button02.svg",
             "hoverImagePath": "./assets/v2/Eyebrow_Button02_Hover.svg",
             "positionX": 162.91,
             "positionY": 34.48
         },
         { 
+            "type": "InariLocator",
             "imagePath": "./assets/v2/Eyebrow_Button03.svg",
             "hoverImagePath": "./assets/v2/Eyebrow_Button03_Hover.svg",
             "positionX": 226.42,
             "positionY": 43.49
         },
         {
+            "type": "InariLocator",
             "imagePath": "./assets/v2/Eyebrow_Button04.svg",
             "hoverImagePath": "./assets/v2/Eyebrow_Button04_Hover.svg",
             "positionX": 84.23,
