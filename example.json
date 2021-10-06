@@ -248,6 +248,30 @@
                     "positionX": 277.14,
                     "positionY": 25,
                     "itemName": "CLTR_r_Eye01"
+                },
+                {
+                    "type": "InariLocator",
+                    "imagePath": "./assets/v2/LowerFace_CheekButton01.svg",
+                    "hoverImagePath": "./assets/v2/LowerFace_CheekButton01_Active.svg",
+                    "positionX": 22.64,
+                    "positionY": 114,
+                    "itemName": "CLTR_r_Eye01"
+                },
+                {
+                    "type": "InariLocator",
+                    "imagePath": "./assets/v2/LowerFace_CheekButton01.svg",
+                    "hoverImagePath": "./assets/v2/LowerFace_CheekButton01_Active.svg",
+                    "positionX": 502.64,
+                    "positionY": 114,
+                    "itemName": "CLTR_r_Eye01"
+                },
+                {
+                    "type": "InariLocator",
+                    "imagePath": "./assets/v2/LowerFace_ChinButton01.svg",
+                    "hoverImagePath": "./assets/v2/LowerFace_CheekButton01_Active.svg",
+                    "positionX": 200.64,
+                    "positionY": 451,
+                    "itemName": "CLTR_r_Eye01"
                 }
             ]
         }
