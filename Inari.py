@@ -11,6 +11,7 @@ import json
 # TODO: Comment and refactor; make stuff look nice.
 # TODO: Add remaining locators to example.json.
 # TODO: Optimize.
+# TODO: Add anchors.
 
 # region Core
 class InariCommandInterpreter():
@@ -203,6 +204,7 @@ class InariView(QtWidgets.QGraphicsView):
 
 class InariWidget(QtWidgets.QWidget):
     inariCommandInterpreter:InariCommandInterpreter = InariCommandInterpreter()
+    currentScenePath: str = None
 
     def __init__(self, parent: QtCore.QObject, commandInterpreter:InariCommandInterpreter):
         super().__init__(parent)
@@ -219,6 +221,14 @@ class InariWidget(QtWidgets.QWidget):
         self.toolbarWidget.move(10, 10)
         self.toolbarWidget.show()
 
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        super().keyPressEvent(event)
+
+        if (event.key() == QtCore.Qt.Key_F5):
+            path = self.currentScenePath
+            self.clearScene()
+            self.deserializeScene(path)
+
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
         self.inariView.resize(self.size().width(), self.size().height())
@@ -234,12 +244,14 @@ class InariWidget(QtWidgets.QWidget):
     def clearScene(self):
         for item in self.inariScene.items():
             self.inariScene.removeItem(item)
+        self.currentScenePath = None
 
     def deserializeScene(self, filepath: str):
         with open(filepath, "r") as file:
             projectObject = json.loads(file.read())
             if "items" in projectObject:
                 self.deserializeJsonElementsList(None, projectObject["items"])
+        self.currentScenePath = filepath
 
     def deserializeJsonElementsList(self, parent:QtWidgets.QGraphicsItem, jsonItems):
         for jsonItem in jsonItems:
@@ -272,7 +284,7 @@ class InariWidget(QtWidgets.QWidget):
                     if "scaleY" in jsonItem:
                         if float(jsonItem["scaleY"]) < 0:
                             item.setY(item.y() + (item.boundingRect().height() * abs(float(jsonItem["scaleY"]))))
-                        item.setTransform(item.transform().scale(float(jsonItem["scaleY"]), 1))
+                        item.setTransform(item.transform().scale(1, float(jsonItem["scaleY"])))
 
                     # Add item to scene
                     if parent != None:
@@ -287,7 +299,7 @@ class InariWidget(QtWidgets.QWidget):
 
 # endregion
 
-#region Toolbar
+#region Toolbar TODO: Clean
 class InariToolbarButton(QtWidgets.QPushButton):
     _hovering: bool = False
 
@@ -370,7 +382,7 @@ class InariToolbarWidget(QtWidgets.QWidget):
         self._inariWidget.inariView.frameSelected()
 #endregion
 
-# region Items
+# region Items TODO: Clean
 class InariItem(QtWidgets.QGraphicsItem):
     inariWidget: "InariWidget" = None
     renderer: QtSvg.QSvgRenderer = None
