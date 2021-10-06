@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="112.661" height="35.748" viewBox="0 0 112.661 35.748">
   <g id="Eye_TopButton02" transform="translate(-107.543 -31.859)">
     <path id="Path_7" data-name="Path 7" d="M0,78.71S5.094,66.57,5.683,41.018C6.236,17.025.74,1.924,0,0H0" transform="translate(124.477 50.59) rotate(-90)" fill="#3b3b3b" stroke="#3b3b3b" stroke-linecap="round" stroke-linejoin="bevel" stroke-width="26"/>
-    <path id="Path_8" data-name="Path 8" d="M0,78.71S5.094,66.57,5.683,41.018C6.236,17.025.74,1.924,0,0H0" transform="translate(124.477 50.59) rotate(-90)" fill="none" stroke="#707070" stroke-linecap="round" stroke-linejoin="bevel" stroke-width="20"/>
+    <path id="Path_8" data-name="Path 8" d="M0,78.71S5.094,66.57,5.683,41.018C6.236,17.025.74,1.924,0,0H0" transform="translate(124.477 50.59) rotate(-90)" fill="none" stroke="#BEBEBE" stroke-linecap="round" stroke-linejoin="bevel" stroke-width="20"/>
   </g>
 </svg>

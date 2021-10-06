@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="662" height="511" viewBox="0 0 662 511">
+  <g id="LowerFace_Background" transform="translate(0.954 0.458)">
+    <path id="LowerFace_Background-2" data-name="LowerFace_Background" d="M82.75,0h496.5A82.75,82.75,0,0,1,662,82.75V91A331,331,0,0,1,331,422h0A331,331,0,0,1,0,91V82.75A82.75,82.75,0,0,1,82.75,0Z" transform="translate(-0.954 88.542)" fill="#3b3b3b"/>
+    <path id="Path_9" data-name="Path 9" d="M537.553,634.377s14.451,16.9,61.2,30.93,81.761,19.322,81.761,19.322H237.476a617.5,617.5,0,0,0,84.558-19.322c46.328-14.031,60.127-30.93,60.127-30.93Z" transform="translate(-128.951 -594.091)" fill="#3b3b3b"/>
+    <path id="Path_10" data-name="Path 10" d="M588.946,634.377s16.926,12.551,71.686,22.972S756.4,671.7,756.4,671.7H237.476s44.778-3.93,99.041-14.35,70.424-22.972,70.424-22.972Z" transform="translate(-166.891 -581.161)" fill="#3b3b3b"/>
+    <ellipse id="Ellipse_9" data-name="Ellipse 9" cx="106.5" cy="123" rx="106.5" ry="123" transform="translate(225.186 -0.458)" fill="#3b3b3b"/>
+  </g>
+</svg>

@@ -136,8 +136,117 @@
                     "imagePath": "./assets/v2/Eye_TopButton01.svg",
                     "hoverImagePath": "./assets/v2/Eye_TopButton01_Hover.svg",
                     "positionX": 79.0,
-                    "positionY": 12.0,
+                    "positionY": 214.5,
                     "scaleY": -1.0,
+                    "itemName": "CLTR_r_Eye01"
+                },
+                {
+                    "type": "InariLocator",
+                    "imagePath": "./assets/v2/Eye_TopButton02.svg",
+                    "hoverImagePath": "./assets/v2/Eye_TopButton02_Hover.svg",
+                    "positionX": 108.0,
+                    "positionY": 208.25,
+                    "scaleY": -1.0,
+                    "itemName": "CLTR_r_Eye01"
+                }
+            ]
+        },
+        {
+            "type": "InariItem",
+            "imagePath": "./assets/v2/Eye_Background.svg",
+            "positionX": 595.0,
+            "positionY": 200.0,
+            "scaleX": -1.0,
+            "items": [
+                {
+                    "type": "InariLocator",
+                    "imagePath": "./assets/v2/Eye_LookAtControl.svg",
+                    "hoverImagePath": "./assets/v2/Eye_LookAtControl_Hover.svg",
+                    "positionX": 82.0,
+                    "positionY": 71.0,
+                    "itemName": "CLTR_r_Eye01"
+                },
+                {
+                    "type": "InariLocator",
+                    "imagePath": "./assets/v2/Eye_SideButton01.svg",
+                    "hoverImagePath": "./assets/v2/Eye_SideButton01_Hover.svg",
+                    "positionX": 12.0,
+                    "positionY": 62.0,
+                    "itemName": "CLTR_r_Eye01"
+                },
+                {
+                    "type": "InariLocator",
+                    "imagePath": "./assets/v2/Eye_SideButton01.svg",
+                    "hoverImagePath": "./assets/v2/Eye_SideButton01_Hover.svg",
+                    "positionX": 260.0,
+                    "positionY": 62.0,
+                    "scaleX": -1.0,
+                    "itemName": "CLTR_r_Eye01"
+                },
+                {
+                    "type": "InariLocator",
+                    "imagePath": "./assets/v2/Eye_TopButton01.svg",
+                    "hoverImagePath": "./assets/v2/Eye_TopButton01_Hover.svg",
+                    "positionX": 79.0,
+                    "positionY": 12.0,
+                    "itemName": "CLTR_r_Eye01"
+                },
+                {
+                    "type": "InariLocator",
+                    "imagePath": "./assets/v2/Eye_TopButton02.svg",
+                    "hoverImagePath": "./assets/v2/Eye_TopButton02_Hover.svg",
+                    "positionX": 108.0,
+                    "positionY": 32.0,
+                    "itemName": "CLTR_r_Eye01"
+                },
+                {
+                    "type": "InariLocator",
+                    "imagePath": "./assets/v2/Eye_TopButton01.svg",
+                    "hoverImagePath": "./assets/v2/Eye_TopButton01_Hover.svg",
+                    "positionX": 79.0,
+                    "positionY": 214.5,
+                    "scaleY": -1.0,
+                    "itemName": "CLTR_r_Eye01"
+                },
+                {
+                    "type": "InariLocator",
+                    "imagePath": "./assets/v2/Eye_TopButton02.svg",
+                    "hoverImagePath": "./assets/v2/Eye_TopButton02_Hover.svg",
+                    "positionX": 108.0,
+                    "positionY": 208.25,
+                    "scaleY": -1.0,
+                    "itemName": "CLTR_r_Eye01"
+                }
+            ]
+        },
+        {
+            "type": "InariItem",
+            "imagePath": "./assets/v2/LowerFace_Background.svg",
+            "positionX": 231.86,
+            "positionY": 475,
+            "items": [
+                {
+                    "type": "InariLocator",
+                    "imagePath": "./assets/v2/LowerFace_NoseButton02.svg",
+                    "hoverImagePath": "./assets/v2/LowerFace_NoseButton02_Active.svg",
+                    "positionX": 250.14,
+                    "positionY": 89,
+                    "itemName": "CLTR_r_Eye01"
+                },
+                {
+                    "type": "InariLocator",
+                    "imagePath": "./assets/v2/LowerFace_NoseButton02.svg",
+                    "hoverImagePath": "./assets/v2/LowerFace_NoseButton02_Active.svg",
+                    "positionX": 347.14,
+                    "positionY": 89,
+                    "itemName": "CLTR_r_Eye01"
+                },
+                {
+                    "type": "InariLocator",
+                    "imagePath": "./assets/v2/LowerFace_NoseButton01.svg",
+                    "hoverImagePath": "./assets/v2/LowerFace_NoseButton01_Active.svg",
+                    "positionX": 277.14,
+                    "positionY": 25,
                     "itemName": "CLTR_r_Eye01"
                 }
             ]
