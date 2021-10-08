@@ -11,8 +11,11 @@ import json
 # TODO: Comment and refactor; make stuff look nice.
 # TODO: Add remaining locators to example.json.
 # TODO: Optimize.
-# TODO: Add anchors.
-
+# TODO: Anchors.
+# TODO: cursors.
+# TODO: Readme.
+# TODO: Demo rig.
+# TODO: Icon.
 # region Core
 class InariCommandInterpreter():
     def Host_SetSelection(self, items:typing.List[str]) -> None:
