@@ -13,7 +13,7 @@ class Window(QtWidgets.QWidget):
 
         self.setWindowTitle("Khaos System | Inari")
         self.setGeometry(300, 50, 766, 980)
-        self.setWindowIcon(QtGui.QIcon("icon.png"))
+        self.setWindowIcon(QtGui.QIcon("resources/textures/icon.png"))
 
         inariWidget = InariWidget(self, InariCommandInterpreter())
         

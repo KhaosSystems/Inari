@@ -16,6 +16,7 @@ import json
 # TODO: Readme.
 # TODO: Demo rig.
 # TODO: Icon.
+
 # region Core
 class InariCommandInterpreter():
     def Host_SetSelection(self, items:typing.List[str]) -> None:
