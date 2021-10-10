@@ -2,8 +2,10 @@ from os import terminal_size
 from types import FrameType
 from PySide2.QtCore import QPoint, QPointF, QRectF, Qt
 
+
 from PySide2.QtWidgets import QApplication, QFileDialog, QGraphicsItem, QHBoxLayout, QPushButton, QStyleOptionViewItem, QWidget
 from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
+import abc
 import typing
 import json
 
@@ -15,73 +17,103 @@ import json
 # TODO: cursors.
 # TODO: Readme.
 # TODO: Demo rig.
-# TODO: Icon.
 
 # region Core
+"""
+InariCommandInterpreter is the primary comunication bridge between Inari and the host software.
+All software bridges needs to provide an InariCommandInterpreter when creating the InariWidget.
+The host software is responsible for re-implementing/overriding all functions prefixed with "Host_".
+"""
 class InariCommandInterpreter():
+    # Sets the selection, meaning replacing the existing selection.
     def Host_SetSelection(self, items:typing.List[str]) -> None:
         print(f'Host_SetSelection(items: {items})')
 
+    # Returns an array of strings containing the names of all currently selected objects.
     def Host_GetSelection(self) -> typing.List[str]:
         print(f'Host_GetSelection()')
         return []
 
+    # Sets the position of first item with the specified name.
     def Host_SetPosition(self, item:str, x:float, y:float, z:float, worldSpace:bool=False, relative:bool=True) -> None:
         print(f'Host_SetSelection(item: {item}, x: {x}, y: {y}, z: {z}, worldSpace: {worldSpace}, relative: {relative})')
 
+    # Gets the position of first item with the specified name.
     def Host_GetPosition(self, item:str, worldSpace:bool=False, relative:bool=True) -> typing.List[float]:
         print(f'Host_GetSelection(item: {item}, worldSpace: {worldSpace}, relative: {relative})')
         return [0, 0, 0]
 
 
+"""
+InariScene can be thought as the scene data, providing the necessary functions to alter and manage the items.
+For a deeper understand of how this works i suggest reading up on the "Qt Graphics View Framework".
+"""
 class InariScene(QtWidgets.QGraphicsScene):
-    _shouldPropagateEventsToItems: bool = True
-    _commandInterpreter:InariCommandInterpreter = None
+    # If false, items won't recieve events and vise-versa.
+    shouldPropagateEventsToItems: bool = True
+    # The InariCommandInterpreter used for interacting with the host application.
+    commandInterpreter:InariCommandInterpreter = None
+    # All InariItem in this list will recieve scene/global mouse events.
     _sceneMouseMoveEventListeners:typing.List["InariItem"] = []
 
+    # Constructor
     def __init__(self, parentItem: QtWidgets.QGraphicsItem) -> None:
         super().__init__(parentItem)
+        # Register signals
         QtCore.QObject.connect(self, QtCore.SIGNAL("selectionChanged()"), self.selectionChangedSignal)
-        
-    def setCommandInterpreter(self, commandInterpreter:InariCommandInterpreter):
-        self._commandInterpreter = commandInterpreter
 
+    # Sets the InariCommandInterpreter used for interacting with the host application.
+    def setCommandInterpreter(self, commandInterpreter:InariCommandInterpreter) -> None:
+        self.commandInterpreter = commandInterpreter
+
+    # If false, items won't recieve events and vise-versa.
+    def setShouldPropagateEventsToItems(self, shouldPropagateEventsToItems: bool) -> None:
+        self.shouldPropagateEventsToItems = shouldPropagateEventsToItems
+
+    # Returns bounding box of the selected items. 
+    def selectionItemsBoundingRect(self) -> QtCore.QRectF:
+        # Does not take untransformable items into account.
+        boundingRect = QtCore.QRectF()
+        for item in self.selectedItems():
+            boundingRect |= item.sceneBoundingRect()
+        return boundingRect
+
+    # Registers an InariItem for receiving scene space/global mouse events.
     def registerSceneMouseMoveEventListener(self, item: "InariItem") -> None:
         self._sceneMouseMoveEventListeners.append(item)
 
+    # Unregisters an InariItem for receiving scene space/global mouse events.
     def unregisterSceneMouseMoveEventListener(self, item: "InariItem") -> None:
         self._sceneMouseMoveEventListeners.remove(item)
 
-    def mouseMoveEvent(self, event:QtWidgets.QGraphicsSceneMouseEvent):
+    # Overwritten mouse move event handler, refer to qt docs.
+    def mouseMoveEvent(self, event:QtWidgets.QGraphicsSceneMouseEvent) -> None:
+        super().mouseMoveEvent(event)
+        # Notify all InariItems registered for scene mouse move events.
         for listener in self._sceneMouseMoveEventListeners:
             listener.sceneMouseMoveEvent(event)
-
-        return super().mouseMoveEvent(event)
-
-    def setShouldPropagateEventsToItems(self, shouldPropagateEventsToItems: bool) -> None:
-        self._shouldPropagateEventsToItems = shouldPropagateEventsToItems
-
+    
+    # Overwritten master event handler/dispatcher, refer to qt docs.
     def event(self, event: QtCore.QEvent) -> bool:
-        if self._shouldPropagateEventsToItems:
+        # Handle event blocking.
+        if self.shouldPropagateEventsToItems:
             return super().event(event)
         else:
+            # Mark the event as handled.
             return True
 
+    # Overwritten addItem function, refer to qt docs.
     def addItem(self, item: QtWidgets.QGraphicsItem) -> None:
         super().addItem(item)
+        # Recalculate the scene rect size and add a big margin, this allows freer scene movement
+        # since camera transformations won't be blocked due to the small default scene size.
         self.setSceneRect(self.itemsBoundingRect().marginsAdded(QtCore.QMarginsF(1024*128, 1024*128, 1024*128, 1024*128)))
 
+    # Connected selectionChanged() signal, refer to qt docs.
     def selectionChangedSignal(self) -> None:
+        # Tell the host application to update it's selection to match Inari.
         items = [item.itemName for item in self.selectedItems() if isinstance(item, InariLocator)]
-        self._commandInterpreter.Host_SetSelection(items)
-
-    def selectionItemsBoundingRect(self):
-        # Does not take untransformable items into account.
-        boundingRect = QtCore.QRectF()
-        items = self.selectedItems()
-        for item in items:
-            boundingRect |= item.sceneBoundingRect()
-        return boundingRect
+        self.commandInterpreter.Host_SetSelection(items)
 
 
 class InariView(QtWidgets.QGraphicsView):
@@ -135,13 +167,24 @@ class InariView(QtWidgets.QGraphicsView):
             self.setDragMode(QtWidgets.QGraphicsView.DragMode.RubberBandDrag)
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        super().mousePressEvent(event)
+
         if event.button() == QtCore.Qt.RightButton:
             self._lastRightMousePressPosition = event.pos()
             self._initialRightMousePressHorizontalScalingFactor = self.matrix().m11()
             self._initialRightMousePressVerticalScalingFactor = self.matrix().m22()
 
         self._lastLeftMouseZoomFactor = 1
-        super().mousePressEvent(event)
+
+        if bool(QtWidgets.QApplication.queryKeyboardModifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
+            if bool((event.buttons() & QtCore.Qt.MiddleButton) or (event.buttons() & QtCore.Qt.LeftButton)):
+                self.window().setCursor(QtCore.Qt.SizeAllCursor)
+            elif bool(event.buttons() & QtCore.Qt.RightButton):
+                self.window().setCursor(QtCore.Qt.SizeVerCursor)
+
+    def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
+        super().mouseReleaseEvent(event)
+        self.window().setCursor(QtCore.Qt.ArrowCursor)
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         # Camera panning and zooming
