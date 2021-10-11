@@ -1,8 +1,3 @@
-from os import terminal_size
-from types import FrameType
-from PySide2.QtCore import QPoint, QPointF, QRectF, Qt
-
-from PySide2.QtWidgets import QApplication, QFileDialog, QGraphicsItem, QHBoxLayout, QPushButton, QStyleOptionViewItem, QWidget
 from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
 import typing
 import json
@@ -306,7 +301,7 @@ class InariWidget(QtWidgets.QWidget):
         self.inariView.show()
 
         # Create and configure the toolbar.
-        self.toolbarWidget = InariToolbarWidget(self, Qt.WindowFlags())
+        self.toolbarWidget = InariToolbarWidget(self, QtCore.Qt.WindowFlags())
         self.toolbarWidget.move(10, 10)
         self.toolbarWidget.show()
 
@@ -440,7 +435,7 @@ class InariWidget(QtWidgets.QWidget):
         self.toolbarWidget.resize(self.size().width()-20, 35)
 # endregion
 
-#region Toolbar
+# region Toolbar related.
 """
 InariToolbarPushButton represents a button on the InariToolbarWidget.
 """
@@ -579,7 +574,7 @@ class InariToolbarWidget(QtWidgets.QWidget):
         self.terminalButton.move(self.size().width()-(self.buttonSize.width()*5)-(self.buttonMargin*5), self.buttonMargin)
 #endregion
 
-# region Items
+# region InariItems.
 """
 InariItem is the master class for all scene items.
 If you want to create an item with custom logic, it needs to inherit from InariItem.
