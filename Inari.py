@@ -503,25 +503,25 @@ class InariToolbarWidget(QtWidgets.QWidget):
         self.buttonMargin = (self.size().height()-self.buttonSize.height())/2
        
         # Settings Button
-        self.settingsButton = InariToolbarPushButton(self, "./assets/internal/Button_Settings.svg", "./assets/internal/Button_Settings_Hover.svg")
+        self.settingsButton = InariToolbarPushButton(self, "./resources/graphics/Button_Settings.svg", "./resources/graphics/Button_Settings_Hover.svg")
         self.settingsButton.resize(self.buttonSize)
 
         # Open Button
-        self.openButton = InariToolbarPushButton(self, "./assets/internal/Button_Open.svg", "./assets/internal/Button_Open_Hover.svg")
+        self.openButton = InariToolbarPushButton(self, "./resources/graphics/Button_Open.svg", "./resources/graphics/Button_Open_Hover.svg")
         self.openButton.resize(self.buttonSize)
         self.openButton.clicked.connect(self.openButtonPressed)
 
         # Save Button
-        self.saveButton = InariToolbarPushButton(self, "./assets/internal/Button_Save.svg", "./assets/internal/Button_Save_Hover.svg")
+        self.saveButton = InariToolbarPushButton(self, "./resources/graphics/Button_Save.svg", "./resources/graphics/Button_Save_Hover.svg")
         self.saveButton.resize(self.buttonSize)
         
         # New Button
-        self.newButton = InariToolbarPushButton(self, "./assets/internal/Button_New.svg", "./assets/internal/Button_New_Hover.svg")
+        self.newButton = InariToolbarPushButton(self, "./resources/graphics/Button_New.svg", "./resources/graphics/Button_New_Hover.svg")
         self.newButton.resize(self.buttonSize)
         self.newButton.clicked.connect(self.newButtonPressed)
 
         # Terminal Button
-        self.terminalButton = InariToolbarPushButton(self, "./assets/internal/Button_Terminal.svg", "./assets/internal/Button_Terminal_Hover.svg")
+        self.terminalButton = InariToolbarPushButton(self, "./resources/graphics/Button_Terminal.svg", "./resources/graphics/Button_Terminal_Hover.svg")
         self.terminalButton.resize(self.buttonSize)
 
     # Method connected to the new buttons clicked signal, please refer to the QT documentation.
