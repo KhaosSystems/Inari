@@ -8,7 +8,6 @@ import typing
 import json
 
 # TODO: Alt mouse wheel always zoom out.
-# TODO: Comment and refactor; make stuff look nice.
 # TODO: Add remaining locators to example.json.
 # TODO: Optimize.
 # TODO: Anchors.
@@ -446,31 +445,50 @@ class InariWidget(QtWidgets.QWidget):
 InariToolbarPushButton represents a button on the InariToolbarWidget.
 """
 class InariToolbarPushButton(QtWidgets.QPushButton):
+    # Hover state; I really doubt that Qt don't have a function for this, but O have no internet right now so this will do xD.
     _hovering: bool = False
 
+    # Constructor.
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None, filepath: str = None, hoverFilepath: str = None) -> None:
         super().__init__(parent=parent)
+
+        # Create the icon object.
         self.icon = QtGui.QIcon(filepath)
         self.hoverIcon = QtGui.QIcon(hoverFilepath)
 
+    # Overwritten paint event handler, please refer to the QT documentation.
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
+        # Create and configure painter.
         painter = QtGui.QPainter()
         painter.begin(self)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        
+        # Render the icon.
         if self._hovering:
             self.hoverIcon.paint(painter, self.rect())
         else:
             self.icon.paint(painter, self.rect())
+        
+        # Stop painting.
         painter.end()
 
+    # Overwritten mouse enter event handler, please refer to the QT documentation.
     def enterEvent(self, event: QtCore.QEvent) -> None:
         super().enterEvent(event)
+
+        # Update the hovering state.
         self._hovering = True
+
+        # Calling update will force a redraw.
         self.update()
 
     def leaveEvent(self, event: QtCore.QEvent) -> None:
         super().leaveEvent(event)
+        
+        # Update the hovering state.
         self._hovering = False
+
+        # Calling update will force a redraw.
         self.update()
 
 """
