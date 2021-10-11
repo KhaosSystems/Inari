@@ -6,7 +6,6 @@ import json
 # TODO: Add remaining locators to example.json.
 # TODO: Optimize.
 # TODO: Anchors.
-# TODO: cursors.
 # TODO: Readme.
 # TODO: Demo rig.
 
@@ -270,7 +269,8 @@ class InariView(QtWidgets.QGraphicsView):
         # Mouse wheel zooming
         zoomFactor = 1.05
         self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
-        if event.angleDelta().y() > 0:
+        # Add angleDelta() x and y to get propper mouse wheel delta.
+        if event.angleDelta().y() + event.angleDelta().x() > 0:
             self.scale(zoomFactor, zoomFactor)
         else:
             self.scale(1 / zoomFactor, 1 / zoomFactor)
@@ -433,6 +433,7 @@ class InariWidget(QtWidgets.QWidget):
         # Propagate resize to view and toolbar. this should ideally be done with QT layouts.
         self.inariView.resize(self.size().width(), self.size().height())
         self.toolbarWidget.resize(self.size().width()-20, 35)
+
 # endregion
 
 # region Toolbar related.
