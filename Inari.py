@@ -529,7 +529,7 @@ class InariToolbarWidget(QtWidgets.QWidget):
     # Overwritten paint event handler, please refer to the QT documentation.
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         super().paintEvent(event)
-        
+
         # Create and configure painter.
         painter = QtGui.QPainter()
         painter.begin(self)
@@ -561,70 +561,111 @@ class InariToolbarWidget(QtWidgets.QWidget):
         self.terminalButton.move(self.size().width()-(self.buttonSize.width()*5)-(self.buttonMargin*5), self.buttonMargin)
 #endregion
 
-# region Items TODO: Clean
+# region Items
+"""
+InariItem is the master class for all scene items.
+If you want to create an item with custom logic, it needs to inherit from InariItem.
+"""
 class InariItem(QtWidgets.QGraphicsItem):
+    # The owning InariWidget.
     inariWidget: "InariWidget" = None
+    # The QSvgRenderer used to render the item. 
     renderer: QtSvg.QSvgRenderer = None
+    # The InariCommandInterpreter used for interacting with the host application.
     commandInterpreter: InariCommandInterpreter = None 
 
+    # Constructor.
     def __init__(self, inariWidget: "InariWidget", filepath: str) -> None:
         super().__init__()
+
+        # Configure the item.
+        self.inariWidget = InariWidget
         self.renderer = QtSvg.QSvgRenderer(filepath)
 
+    # Sets the InariCommandInterpreter used for interacting with the host application.
     def setCommandInterpreter(self, commandInterpreter: InariCommandInterpreter):
         self.commandInterpreter = commandInterpreter
 
+    # Overwritten boundingRect() method, please refer to the QT documentation.
     def boundingRect(self) -> QtCore.QRectF:
         return QtCore.QRectF(QtCore.QPointF(0, 0), self.renderer.defaultSize())
 
+    # Overwritten paint method, please refer to the QT documentation.
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: typing.Optional[QtWidgets.QWidget] = ...) -> None:
         self.renderer.render(painter, self.boundingRect())
 
-
+"""
+InariLocator is used to control a control object or locator in the host applications scene.
+"""
 class InariLocator(InariItem):
-    hoverRenderer: QtSvg.QSvgRenderer = None
+    # The QSvgRenderer used to render the item when active/selected.
+    activeRenderer: QtSvg.QSvgRenderer = None
+    # The name of the control object in the host applications scene.
     itemName: str = None
+    # Internal variables used for transformation calculations.
     _initialLeftClickPosition: QtCore.QPointF = None
     _initialPosition: QtCore.QPoint = None
 
+    # Constructor.
     def __init__(self, inariWidget: "InariWidget", filepath: str, hoverFilepath: str) -> None:
         super().__init__(inariWidget, filepath)
-        self.hoverRenderer = QtSvg.QSvgRenderer(hoverFilepath)
+                
+        # Configure the item.
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
         self.setAcceptedMouseButtons(QtCore.Qt.MouseButton.AllButtons)
         self.setAcceptHoverEvents(True)
 
-    def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: typing.Optional[QtWidgets.QWidget] = ...) -> None:
-        self.renderer.render(painter, self.boundingRect())
-        if self.isSelected():
-            self.hoverRenderer.render(painter, self.boundingRect())
+        # Create the active renderer.
+        self.activeRenderer = QtSvg.QSvgRenderer(hoverFilepath)
 
+    # Sets the item name.
     def setItemName(self, itemName: str) -> None:
         self.itemName = itemName
 
+    # Overwritten paint method, please refer to the QT documentation.
+    def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem, widget: typing.Optional[QtWidgets.QWidget] = ...) -> None:
+        # If selected, render using active renderer, else render using normal renderer.
+        if self.isSelected():
+            self.activeRenderer.render(painter, self.boundingRect())
+        else:
+            self.renderer.render(painter, self.boundingRect())
+
+    # Overwritten mouse press event handler, please refer to the QT documentation.
     def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
         super().mousePressEvent(event)
 
+        # Start drag translation.
         if (event.button() == QtCore.Qt.LeftButton):
+            # The build in Qt mouse event only gets called when the item is hovered.
             self.scene().registerSceneMouseMoveEventListener(self)
+
+             # Capture necessary data for drag translation.
             self._initialLeftClickPosition = event.scenePos()
             pos = self.commandInterpreter.Host_GetPosition(self.itemName, worldSpace=False)
             self._initialPosition = QtCore.QPointF(pos[0], pos[1])
             
+        # Calling updates forces a redraw if the item.
         self.update()
 
+    # Overwritten mouse release event handler, please refer to the QT documentation.
     def mouseReleaseEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
         super().mouseReleaseEvent(event)
 
+        # End drag translation.
         if (event.button() == QtCore.Qt.LeftButton):
             self.scene().unregisterSceneMouseMoveEventListener(self)
 
+        # Calling updates forces a redraw if the item.
         self.update()
 
+    # sceneMouseMoveEvent, called by InariScene when registerd to scene mouse move events.
     def sceneMouseMoveEvent(self, event:QtWidgets.QGraphicsSceneMouseEvent) -> None:
+        # Drag translation.
         delta = (event.scenePos() - self._initialLeftClickPosition)
         delta.setY(delta.y() * -1)
         delta /= 100
         newPosition = self._initialPosition + delta
+        
+        # Set the newly calculated object position.
         self.commandInterpreter.Host_SetPosition(self.itemName, newPosition.x(), newPosition.y(), 0, worldSpace=False, relative=False)
 # endregion
